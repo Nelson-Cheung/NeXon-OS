@@ -64,6 +64,29 @@ void secondInit()
     //sysFileSystem.initialize();
 }
 
+void testThreadReturn(void *arg)
+{
+    for (int i = 0; i < 5; ++i)
+    {
+        dword temp = 0xffffff;
+        while (temp)
+            --temp;
+        printf("I will return\n");
+    }
+
+    printf("ok, I return\n");
+}
+
+void testThreadNotReturn(void *arg)
+{
+    while (1)
+    {
+        dword temp = 0xffffff;
+        while (temp)
+            --temp;
+        printf("I never return\n");
+    }
+}
 void firstThread(void *arg)
 {
     _enable_interrupt();
@@ -71,217 +94,13 @@ void firstThread(void *arg)
     // 第2次初始化，上层建筑
     secondInit();
 
-    byte *buffer = (byte *)kernelMalloc(2 * SECTOR_SIZE);
-    dword length = 2 * SECTOR_SIZE;
+    createThread(testThreadReturn, nullptr, 1);
 
-    if (!buffer)
-    {
-        printf("---firstThread---\n"
-               "can not allocate memory for buffer\n");
-    }
-
-    for (int i = 0; i < length; ++i)
-    {
-        if (i < SECTOR_SIZE)
-            buffer[i] = 0x20;
-        else
-            buffer[i] = 0x19;
-    }
-
-    printf("test write blocks\n");
-    Disk::write(PARTITION_1_START, buffer);
-    Disk::write(PARTITION_1_START + 2, buffer + SECTOR_SIZE);
-
-    for (int i = 0; i < length; ++i)
-    {
-        buffer[i] = 0;
-    }
-
-    printf("test read blocks\n");
-    Disk::read(PARTITION_1_START + 2, buffer);
-    Disk::read(PARTITION_1_START, buffer + SECTOR_SIZE);
-
-    for (int i = 0; i < length; ++i)
-    {
-        if (i < SECTOR_SIZE)
-        {
-            if (buffer[i] != 0x19)
-            {
-                printf("read block 1 did not pass, positioin: %d\n", i);
-                break;
-            }
-        }
-        else
-        {
-            if (buffer[i] != 0x20)
-            {
-                printf("read block 2 did not pass, positioin: %d\n", i);
-                break;
-            }
-        }
-    }
-
-    printf("write/read blocks pass\n");
-
-    for (int i = 0; i < length; ++i)
-    {
-        buffer[i] = 0x18;
-    }
-
-    printf("test write bytes 1\n");
-    Disk::writeBytes(PARTITION_1_START * SECTOR_SIZE + 256, buffer, length);
-
-    printf("test read bytes 1\n");
-
-    for (int i = 0; i < length; ++i)
-    {
-        buffer[i] = 0;
-    }
-
-    Disk::readBytes(PARTITION_1_START * SECTOR_SIZE + 256, buffer, length);
-
-    for (int i = 0; i < length; ++i)
-    {
-        if (buffer[i] != 0x18)
-        {
-            printf("write/read bytes 1 not pass");
-        }
-    }
-
-    printf("test read bytes 2\n");
-
-    for (int i = 0; i < length; ++i)
-    {
-        buffer[i] = 0;
-    }
-    Disk::readBytes(PARTITION_1_START * SECTOR_SIZE + 128, buffer, 256);
-
-    for (int i = 0; i < 256; ++i)
-    {
-        if (i < 128)
-        {
-            if (buffer[i] != 0x20)
-            {
-                printf("write/read bytes 1 not pass");
-                break;
-            }
-        }
-        else
-        {
-            if (buffer[i] != 0x18)
-            {
-                printf("write/read bytes 1 not pass");
-                break;
-            }
-        }
-    }
-
-    printf("test read bytes 3\n");
-    for (int i = 0; i < length; ++i)
-    {
-        buffer[i] = 0;
-    }
-
-    Disk::readBytes(PARTITION_1_START * SECTOR_SIZE + 256, buffer, 512);
-
-    for (int i = 0; i < 512; ++i)
-    {
-
-        if (buffer[i] != 0x18)
-        {
-            printf("write/read bytes 1 not pass");
-            break;
-        }
-    }
-
-    printf("test write bytes 2\n");
-
-    for (int i = 0; i < 256; ++i)
-    {
-        buffer[i] = 0x17;
-    }
-
-    Disk::writeBytes(PARTITION_1_START * SECTOR_SIZE + 128, buffer, 256);
-
-    for (int i = 0; i < 513; ++i)
-    {
-        buffer[i] = 0;
-    }
-
-    Disk::read(PARTITION_1_START, buffer);
-
-    for (int i = 0; i < 512; ++i)
-    {
-        if (i < 128)
-        {
-            if (buffer[i] != 0x20)
-            {
-                printf("write/read bytes 2 not pass");
-                break;
-            }
-        }
-        else if (i < 384)
-        {
-            if (buffer[i] != 0x17)
-            {
-                printf("write/read bytes 2 not pass");
-                break;
-            }
-        }
-        else
-        {
-            if (buffer[i] != 0x18)
-            {
-                printf("write/read bytes 2 not pass");
-                break;
-            }
-        }
-    }
-
-    printf("test write bytes 3\n");
-
-    for (int i = 0; i < 512; ++i)
-    {
-        if (i < 256)
-            buffer[i] = 0x16;
-        else
-        {
-            buffer[i] = 0x15;
-        }
-    }
-
-    Disk::writeBytes(PARTITION_1_START * SECTOR_SIZE + 256, buffer, 512);
-
-    for (int i = 0; i < 513; ++i)
-    {
-        buffer[i] = 0;
-    }
-
-    Disk::readBytes(PARTITION_1_START * SECTOR_SIZE + 256, buffer, 512);
-
-    for (int i = 0; i < 512; ++i)
-    {
-        if (i < 256)
-        {
-            if (buffer[i] != 0x16)
-            {
-                printf("write/read bytes 3 not pass");
-                break;
-            }
-        }
-        else
-        {
-            if (buffer[i] != 0x15)
-            {
-                printf("write/read bytes 3 not pass");
-                break;
-            }
-        }
-    }
-    kernelFree(buffer);
-    //List<Inode, Inode::LessThan> l;
-    //printf("Hello World\n");
     while (1)
     {
+        dword temp = 0xffffff;
+        while (temp)
+            --temp;
+        printf("I am the first\n");
     }
 }

@@ -16,7 +16,7 @@
 
 typedef void ThreadFunction(void *);
 void kernelThread(ThreadFunction *function, void *arg);
-
+void kernelThreadReturn();
 dword PID = 0;
 
 //extern "C" void *_running_thread();
@@ -64,7 +64,7 @@ struct ThreadStack
     dword esi;
     void (*eip)(ThreadFunction *func, void *arg);
 
-    dword unusedAddress;
+    dword unusedAddress; // kernelThread的返回地址
     ThreadFunction *function;
     void *funcArg;
 };

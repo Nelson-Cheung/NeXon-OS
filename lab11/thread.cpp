@@ -9,6 +9,21 @@ void kernelThread(ThreadFunction *function, void *arg)
     function(arg);
 }
 
+void kernelThreadReturn() {
+    bool status = _interrupt_status();
+    _disable_interrupt();
+
+    PCB *pcb = (PCB *)_running_thread();
+    pcb->status = ThreadStatus::DIED;
+
+    // 清除分配给线程的资源
+    releasePage((dword)pcb, 1);
+
+    _set_interrupt(status);
+
+    _schedule_thread();
+}
+
 dword createThread(ThreadFunction func, void *arg, byte priority)
 {
     PCB *thread = (PCB *)allocatePages(AddressPoolType::KERNEL, 1);
@@ -43,6 +58,7 @@ dword createThread(ThreadFunction func, void *arg, byte priority)
 
     ThreadStack *threadStack = (ThreadStack *)thread->stack;
     threadStack->eip = kernelThread;
+    threadStack->unusedAddress = (dword)kernelThreadReturn; // kernelThread返回地址
     threadStack->function = func;
     threadStack->funcArg = arg;
     threadStack->ebp =

@@ -6,83 +6,60 @@
 #include "../oslib.h"
 #include "../cstdio.h"
 
+// 实现硬盘按块存取，按字节存取
+
 class Disk
 {
 private:
     Disk();
 
 public:
-    static void write(dword start, byte *buf, dword size)
+    // 按块写入，每次写一个块
+    static void write(dword start, void *buf)
     {
-        dword secSize = (size + SECTOR_SIZE - 1) / SECTOR_SIZE;
-        byte afterLastByte;
+        byte *buffer = (byte *)buf;
 
-        // 每次写入一个字，size为奇数的时候就会发生覆盖的问题
-        if (size % 2)
+        waitForDisk(start, SECTOR_SIZE, 0x30);
+
+        for (int i = 0; i < SECTOR_SIZE; i += 2)
         {
-            byte buffer[SECTOR_SIZE];
-            read(start + secSize - 1, buffer, SECTOR_SIZE);
-            dword offset = size - (secSize - 1) * SECTOR_SIZE;
-            afterLastByte = buffer[offset];
-        }
-
-        dword temp;
-
-        waitForDisk(start, secSize, 0x30);
-
-        dword index = 0;
-        while (index < size)
-        {
-            temp = buf[index];
-            ++index;
+            dword temp = (buffer[i] << 8) + buffer[i];
             // intel下需要按小端方式写，因为读的时候是按小端方式读取的
-            if (size % 2 && index == size)
-            {
-                temp = (temp << 8) + afterLastByte;
-            }
-            else
-            {
-                temp = (temp << 8) + buf[index];
-            }
-            ++index;
             outw_port(0x1f0, temp); // 每次需要向ox1f0写入一个字
 
             temp = _in_port(0x1f7);
             if (temp & 0x1)
             {
                 temp = _in_port(0x1f1);
-                printf("Disk Error: 0x%x\n", temp);
+                printf("---Disk::write---\n"
+                       "Disk Error: 0x%x\n",
+                       temp);
                 return;
             }
         }
     }
 
-    static void read(dword start, byte *buf, dword size)
+    // 按块读出
+    static void read(dword start, void *buf)
     {
+        byte *buffer = (byte *)buf;
 
-        dword secSize = (size + SECTOR_SIZE - 1) / SECTOR_SIZE;
-        dword temp;
+        waitForDisk(start, SECTOR_SIZE, 0x20);
 
-        waitForDisk(start, secSize, 0x30);
-
-        dword index = 0;
-        while (index < size)
+        for (int i = 0; i < SECTOR_SIZE; i += 2)
         {
-            temp = buf[index];
-            ++index;
-            if (index < size)
-            {
-                // intel下需要按小端方式写，因为读的时候是按小端方式读取的
-                temp = (temp << 8) + buf[index];
-                ++index;
-            }
-            outw_port(0x1f0, temp); // 每次需要向ox1f0写入一个字
+            dword temp = inw_port(0x1f0); // 0x1f0需要读入一个字，否则会发生错误
+            buffer[i] = temp & 0xff;
+            temp = temp >> 8;
+            buffer[i + 1] = temp & 0xff;
 
             temp = _in_port(0x1f7);
             if (temp & 0x1)
             {
                 temp = _in_port(0x1f1);
-                printf("Disk Error: 0x%x\n", temp);
+                printf("---Disk::read---\n"
+                       "Disk Error: 0x%x\n",
+                       temp);
                 return;
             }
         }
@@ -94,16 +71,20 @@ public:
         byte *buffer = (byte *)buf;
         byte *temp = (byte *)kernelMalloc(SECTOR_SIZE);
         if (!temp)
-            return;
+        {
+            printf("---Disk::writeBytes---\n"
+                   "can not allocate memory from kernel\n");
+        }
 
         dword startSector = startByte / SECTOR_SIZE;
-        dword endSector = (startByte + size) / SECTOR_SIZE;
+        // 易错
+        dword endSector = (startByte + size - 1) / SECTOR_SIZE;
 
         dword offset, len, totalBytes;
         // 处理头
-        read(startSector, temp, SECTOR_SIZE);
+        read(startSector, temp);
         offset = startByte - startSector * SECTOR_SIZE;
-        len = size < (SECTOR_SIZE - offset) ? size : SECTOR_SIZE;
+        len = size < (SECTOR_SIZE - offset) ? size : SECTOR_SIZE - offset;
         totalBytes = 0;
 
         for (int i = 0; i < len; ++i)
@@ -111,13 +92,13 @@ public:
             temp[i + offset] = buffer[i];
         }
 
-        write(startSector, temp, SECTOR_SIZE);
+        write(startSector, temp);
         totalBytes += len;
 
         // 处理中间
         for (int i = startSector + 1; i < endSector; ++i)
         {
-            write(i, buffer + totalBytes, SECTOR_SIZE);
+            write(i, buffer + totalBytes);
             totalBytes += SECTOR_SIZE;
         }
 
@@ -125,33 +106,38 @@ public:
         len = size - totalBytes;
         if (len)
         {
-            read(endSector, temp, SECTOR_SIZE);
+            read(endSector, temp);
             for (int i = 0; i < len; ++i)
             {
                 temp[i] = buffer[totalBytes + i];
             }
-            write(endSector, temp, SECTOR_SIZE);
+            write(endSector, temp);
         }
 
         kernelFree(temp);
     }
 
+    // 按字节读出
     static void readBytes(dword startByte, void *buf, dword size)
     {
         byte *buffer = (byte *)buf;
         byte *temp = (byte *)kernelMalloc(SECTOR_SIZE);
         if (!temp)
-            return;
+        {
+            printf("---Disk::readBytes---\n"
+                   "can not allocate memory from kernel\n");
+        }
 
         dword startSector = startByte / SECTOR_SIZE;
         // 注意下标
         dword endSector = (startByte + size - 1) / SECTOR_SIZE;
 
         dword offset, len, totalBytes;
+
         // 处理头
-        read(startSector, temp, SECTOR_SIZE);
+        read(startSector, temp);
         offset = startByte - startSector * SECTOR_SIZE;
-        len = size < (SECTOR_SIZE - offset) ? size : SECTOR_SIZE;
+        len = size < (SECTOR_SIZE - offset) ? size : SECTOR_SIZE - offset;
         totalBytes = 0;
 
         for (int i = 0; i < len; ++i)
@@ -164,7 +150,7 @@ public:
         // 处理中间
         for (int i = startSector + 1; i < endSector; ++i)
         {
-            read(i, buffer + totalBytes, SECTOR_SIZE);
+            read(i, buffer + totalBytes);
             totalBytes += SECTOR_SIZE;
         }
 
@@ -172,7 +158,7 @@ public:
         len = size - totalBytes;
         if (len)
         {
-            read(endSector, temp, SECTOR_SIZE);
+            read(endSector, temp);
             for (int i = 0; i < len; ++i)
             {
                 buffer[totalBytes + i] = temp[i];
@@ -204,7 +190,9 @@ private:
             if (temp & 0x1)
             {
                 temp = _in_port(0x1f1);
-                printf("Disk Error: 0x%x\n", temp);
+                printf("---Disk::wairForDisk---\n"
+                       "Disk Error: 0x%x\n",
+                       temp);
                 return;
             }
             else

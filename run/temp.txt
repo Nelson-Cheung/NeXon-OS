@@ -1,0 +1,2 @@
+C:\Program Files\Bochs-2.6.11
+Creating hard disk image 'hd80m' with CHS=162/16/63 (sector size = 512)

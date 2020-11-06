@@ -1,0 +1,15 @@
+#how much memory the emulated machine will have
+megs:4
+ 
+#filename of ROM images
+romimage:file=$BXSHARE/BIOS-bochs-latest,address=Oxf0000
+#vgaromimage: file=$BXSHARE/VGABIOS-lgpl-latest
+vgaromimage: file=$BXSHARE/VGABIOS-elpin-2.40
+ 
+#what disk images will be used
+floppya:1_44=test.img,status=inserted
+ 
+#Choose the boot disk
+boot:a
+ 
+#where do we send log messages?

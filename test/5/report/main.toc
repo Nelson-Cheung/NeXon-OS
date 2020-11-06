@@ -1,0 +1,50 @@
+\contentsline {section}{\numberline {1}实验目的}{2}{section.1}%
+\contentsline {section}{\numberline {2}实验要求}{2}{section.2}%
+\contentsline {section}{\numberline {3}实验内容}{2}{section.3}%
+\contentsline {subsection}{\numberline {3.1}编写用于中断处理的现场保护和现场恢复的汇编过程}{2}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}重写和扩展实验三的的内核程序}{2}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}实现部分基本输入输出库过程}{2}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}执行调用自己设计的库过程的程序}{2}{subsection.3.4}%
+\contentsline {section}{\numberline {4}实验原理}{2}{section.4}%
+\contentsline {subsection}{\numberline {4.1}中断}{2}{subsection.4.1}%
+\contentsline {paragraph}{中断的分类}{3}{section*.2}%
+\contentsline {subsection}{\numberline {4.2}中断术语}{3}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}中断处理的过程}{3}{subsection.4.3}%
+\contentsline {section}{\numberline {5}实验过程}{4}{section.5}%
+\contentsline {subsection}{\numberline {5.1}编写中断向量操作程序}{5}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {5.1.1}移动中断向量宏}{5}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {5.1.2}中断向量写入宏}{5}{subsubsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.2}时钟中断的响应处理程序}{6}{subsection.5.2}%
+\contentsline {paragraph}{主模块}{7}{section*.4}%
+\contentsline {paragraph}{风火轮模块}{7}{section*.5}%
+\contentsline {subsection}{\numberline {5.3}键盘中断的响应处理程序}{7}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}修改内核和用户程序}{8}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}修改内核}{8}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}修改用户程序}{9}{subsubsection.5.4.2}%
+\contentsline {subsection}{\numberline {5.5}扩展内核程序-实时显示时间}{9}{subsection.5.5}%
+\contentsline {subsubsection}{\numberline {5.5.1}从BIOS获得日期时间的信息}{9}{subsubsection.5.5.1}%
+\contentsline {subsubsection}{\numberline {5.5.2}加工和显示获得的信息}{10}{subsubsection.5.5.2}%
+\contentsline {subsubsection}{\numberline {5.5.3}修改中断程序}{11}{subsubsection.5.5.3}%
+\contentsline {subsubsection}{\numberline {5.5.4}在合适的位置加载中断向量}{11}{subsubsection.5.5.4}%
+\contentsline {paragraph}{修改内核程序}{11}{section*.8}%
+\contentsline {paragraph}{修改加载用户程序的函数}{11}{section*.9}%
+\contentsline {subsection}{\numberline {5.6}软盘扇区安排}{11}{subsection.5.6}%
+\contentsline {subsection}{\numberline {5.7}镜像文件生成}{11}{subsection.5.7}%
+\contentsline {section}{\numberline {6}程序使用说明}{12}{section.6}%
+\contentsline {subsection}{\numberline {6.1}实验环境}{12}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}编译方法}{12}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}系统要求}{12}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}编译过程与参数}{12}{subsubsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.3}运行与演示}{12}{subsection.6.3}%
+\contentsline {subsubsection}{\numberline {6.3.1}风火轮}{12}{subsubsection.6.3.1}%
+\contentsline {subsubsection}{\numberline {6.3.2}带时间显示和风火轮}{13}{subsubsection.6.3.2}%
+\contentsline {subsubsection}{\numberline {6.3.3}带时间显示和风火轮}{14}{subsubsection.6.3.3}%
+\contentsline {section}{\numberline {7}总结与讨论}{15}{section.7}%
+\contentsline {subsection}{\numberline {7.1}特色,不足与改进}{15}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}收获}{15}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}遇到的问题和感想}{15}{subsection.7.3}%
+\contentsline {paragraph}{}{15}{section*.15}%
+\contentsline {paragraph}{}{15}{section*.16}%
+\contentsline {paragraph}{}{15}{section*.17}%
+\contentsline {paragraph}{}{15}{section*.18}%
+\contentsline {section}{\numberline {8}附录}{16}{section.8}%

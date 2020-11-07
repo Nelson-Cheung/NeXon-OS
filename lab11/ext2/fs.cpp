@@ -1,9 +1,11 @@
 #include "fs.h"
+#include "directory_entry.h"
+
 #include "../cstdlib.h"
 #include "../syscall.h"
 #include "../cstdio.h"
-#include "directory_entry.h"
 #include "../string.h"
+#include "../math.h"
 
 FileSystem::FileSystem()
 {
@@ -12,7 +14,9 @@ FileSystem::FileSystem()
 
 void FileSystem::init()
 {
-    Disk::read(PARTITION_1_START, (byte *)&sb, sizeof(SuperBlock));
+    // 文件系统管理的第一块扇区是超级块
+
+    Disk::read(PARTITION_1_START, (byte *)&sb);
     // 判断文件系统是否已经建立，若未建立则需先建立
     if (sb.magic == 0x19241112)
     {
@@ -26,21 +30,21 @@ void FileSystem::init()
         sb.totalSectors = HADR_DISK_SECTOR_AMOUNT - PARTITION_1_START + 1;
         // 越过超级块
         sb.inodeBitmapStartSector = 1 + PARTITION_1_START;
-        sb.inodeBitmapLength = MAX_FILES / BITS_PER_SECTOR;
+        sb.inodeBitmapLength = stdmath::roundup(MAX_FILES, BITS_PER_SECTOR);
 
         sb.inodeTableStartSector = sb.inodeBitmapStartSector + sb.inodeBitmapLength;
-        sb.inodeTableLength = (sizeof(Inode) * MAX_FILES) / SECTOR_SIZE;
+        sb.inodeTableLength = stdmath::roundup(sizeof(Inode) * MAX_FILES, SECTOR_SIZE);
 
         sb.blockBimapStartSector = sb.inodeTableStartSector + sb.inodeTableLength;
-        sb.blockBimapLength = (sb.totalSectors - sb.blockBimapStartSector) / BITS_PER_SECTOR;
+        sb.blockBimapLength = stdmath::roundup(sb.totalSectors - sb.blockBimapStartSector, BITS_PER_SECTOR);
         // 粗略地估算，事实上，后面会剩下若干个扇区无法被管理
-        sb.blockBimapLength = (sb.totalSectors - sb.blockBimapStartSector - sb.blockBimapLength) / BITS_PER_SECTOR;
+        sb.blockBimapLength = stdmath::roundup(sb.totalSectors - sb.blockBimapStartSector - sb.blockBimapLength, BITS_PER_SECTOR);
 
         sb.dataFieldStartSector = sb.blockBimapStartSector + sb.blockBimapLength;
         sb.dataFieldLength = sb.blockBimapLength * 8; // 一个字节是8位
 
         // 超级块被放置在文件系统管理的扇区的第一个扇区
-        Disk::write(PARTITION_1_START, (byte *)&sb, SECTOR_SIZE);
+        Disk::write(PARTITION_1_START, (byte *)&sb);
     }
 
     // 初始化打开文件表
@@ -65,7 +69,7 @@ void FileSystem::init()
     dir.name[1] = '\0';
     dir.type = DIRECTORY_FILE;
     memcpy(&dir, buffer, sizeof(DirectoryEntry));
-    
+
     dir.name[0] = '.';
     dir.name[1] = '.';
     dir.name[2] = '\0';
@@ -79,7 +83,6 @@ void FileSystem::init()
 
     Disk::write(sb.inodeTableStartSector, (byte *)&root, sizeof(Inode));
 }
-
 
 // dword FileSystem::openFile(const char *path, bool rw, dword type)
 // {
@@ -173,7 +176,6 @@ void FileSystem::init()
 //     getFileNameInPath(path, filename);
 //     createEntryInDirectory(entry, filename, REGULAR_FILE);
 // }
-
 
 // dword FileSystem::readFile(dword handle, dword start, void *buf)
 // {

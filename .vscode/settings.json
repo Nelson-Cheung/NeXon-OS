@@ -6,6 +6,7 @@
         "ostream": "cpp",
         "sstream": "cpp",
         "streambuf": "cpp",
-        "xmemory": "cpp"
+        "xmemory": "cpp",
+        "xutility": "cpp"
     }
 }

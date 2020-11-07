@@ -17,6 +17,7 @@
 typedef void ThreadFunction(void *);
 void kernelThread(ThreadFunction *function, void *arg);
 void kernelThreadReturn();
+
 dword PID = 0;
 
 //extern "C" void *_running_thread();

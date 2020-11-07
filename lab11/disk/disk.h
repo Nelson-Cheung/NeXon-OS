@@ -23,7 +23,7 @@ public:
 
         for (int i = 0; i < SECTOR_SIZE; i += 2)
         {
-            dword temp = (buffer[i] << 8) + buffer[i];
+            dword temp = (buffer[i + 1] << 8) + buffer[i];
             // intel下需要按小端方式写，因为读的时候是按小端方式读取的
             outw_port(0x1f0, temp); // 每次需要向ox1f0写入一个字
 

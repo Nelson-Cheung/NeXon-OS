@@ -81,4 +81,6 @@ private:
     dword createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
 };
 
+FileSystem sysFileSystem;
+
 #endif

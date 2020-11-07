@@ -6,6 +6,7 @@ DiskBitMap::DiskBitMap()
     length = start = -1;
     byte mask = 128;
 
+    // 全局变量不调用构造函数
     for (int i = 0; i < 8; ++i)
     {
         masks[i] = mask;
@@ -13,12 +14,14 @@ DiskBitMap::DiskBitMap()
     }
 }
 
-DiskBitMap::DiskBitMap(const DiskBitMap &other) {
+DiskBitMap::DiskBitMap(const DiskBitMap &other)
+{
     length = other.length;
     start = other.start;
 }
 
-DiskBitMap &DiskBitMap::operator=(const DiskBitMap &other) {
+DiskBitMap &DiskBitMap::operator=(const DiskBitMap &other)
+{
     length = other.length;
     start = other.start;
     return *this;
@@ -28,6 +31,13 @@ void DiskBitMap::setBitMap(const dword start, const dword length)
 {
     this->start = start;
     this->length = length;
+
+    dword mask = 128;
+    for (int i = 0; i < 8; ++i)
+    {
+        masks[i] = mask;
+        mask = mask >> 1;
+    }
 }
 
 dword DiskBitMap::allocate()
@@ -64,6 +74,7 @@ dword DiskBitMap::allocate()
                     // 置位
                     buffer[j] = buffer[j] | masks[k];
                     // 同步化到磁盘
+                    printf("---%d %d\n", i + start, buffer[j]);
                     Disk::write(i + start, buffer);
                     kernelFree(buffer);
                     return k + counter;
@@ -78,7 +89,8 @@ dword DiskBitMap::allocate()
 
 void DiskBitMap::release(const dword index)
 {
-    if(index >= length) return;
+    if (index >= length)
+        return;
 
     dword sector = index / BITS_PER_SECTOR;
     dword offset = (index % BITS_PER_SECTOR) / 8;

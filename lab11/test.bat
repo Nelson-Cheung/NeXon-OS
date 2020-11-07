@@ -24,6 +24,7 @@ cls
  echo 编译内核(汇编实现的内核代码)
  %COMPLIE_TOOL_DIR%\nasm.exe -f elf32 kernel.asm -o kernel_asm.o
  pause
+ 
 echo 编译内核(c++实现的内核代码)
 %COMPLIE_TOOL_DIR%\g++.exe -O0 -march=i386 -m32 -c kernel.cpp -o kernel.o
 pause

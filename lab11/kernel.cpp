@@ -13,8 +13,9 @@
 #include "addresspool.cpp"
 #include "threadlist.cpp"
 #include "syscall.cpp"
-#include "disk/disk.h"
+#include "ext2/fs.cpp"
 #include "disk/disk_bitmap.cpp"
+#include "disk/disk.h"
 
 void init();
 void firstThread(void *arg);
@@ -95,53 +96,9 @@ void firstThread(void *arg)
     // 第2次初始化，上层建筑
     secondInit();
 
-    DiskBitMap diskBitMap;
-    dword length = 2 * SECTOR_SIZE;
+    sysFileSystem.init();
 
-    diskBitMap.setBitMap(PARTITION_1_START, length);
-    dword first = diskBitMap.allocate();
-    printf("allocate first resource %d\n", first);
+    while(1) {
 
-    diskBitMap.release(first);
-
-    dword second = diskBitMap.allocate();
-    printf("release first and allocate second resource %d\n", second);
-
-    diskBitMap.release(second);
-    printf("release second\n");
-
-    second = diskBitMap.allocate();
-    printf("release second and allocate second resource %d\n", second);
-
-    diskBitMap.release(second);
-
-
-    printf("allocate 2 * SECTOR_SIZE\n");
-    for (int i = 0; i < length; ++i)
-    {
-        dword temp = diskBitMap.allocate();
-        if (temp == -1)
-        {
-            printf("allocate did not pass, %d\n", i);
-            break;
-        }
-    }
-
-    first = diskBitMap.allocate();
-    printf("allocate pass bound, %d\n", first);
-
-    printf("release 2 * SECTOR_SIZE\n");
-    for (int i = 0; i < length; ++i)
-    {
-        diskBitMap.release(i);
-    }
-
-    first = diskBitMap.allocate();
-    printf("allocate one more %d\n", first);
-
-    diskBitMap.release(first);
-
-    while (1)
-    {
     }
 }

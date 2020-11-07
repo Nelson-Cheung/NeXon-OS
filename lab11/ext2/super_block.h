@@ -12,11 +12,6 @@ struct SuperBlock
 
     dword totalSectors; // 文件系统管理的总扇区数
 
-    /*
-    dword fsDescriptorStartSector; // 文件系统的描述符起始扇区
-    dword fsDescriptorLength;      // 文件系统的描述符占据的扇区数
-    */
-
     dword inodeBitmapStartSector; // inode位图实际的数据区域的起始扇区地址
     dword inodeBitmapLength;      // inode位图实际的数据区域占据的扇区数
 
@@ -29,6 +24,6 @@ struct SuperBlock
     dword dataFieldStartSector; // 数据区起始的扇区地址
     dword dataFieldLength;      // 数据区占据的扇区总数
 
-    dword padding[SECTOR_SIZE - sizeof(dword) * 12]; // 填充字符
+    byte padding[SECTOR_SIZE - sizeof(dword) * 10]; // 填充字符
 };
 #endif

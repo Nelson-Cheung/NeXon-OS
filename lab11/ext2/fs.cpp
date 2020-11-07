@@ -15,12 +15,16 @@ FileSystem::FileSystem()
 void FileSystem::init()
 {
     // 文件系统管理的第一块扇区是超级块
-
     Disk::read(PARTITION_1_START, (byte *)&sb);
+    bool flag;
+
+    flag = false;
+
     // 判断文件系统是否已经建立，若未建立则需先建立
     if (sb.magic == 0x19241112)
     {
         printf("file system has been built\n");
+        flag = true;
     }
     else
     {
@@ -41,11 +45,31 @@ void FileSystem::init()
         sb.blockBimapLength = stdmath::roundup(sb.totalSectors - sb.blockBimapStartSector - sb.blockBimapLength, BITS_PER_SECTOR);
 
         sb.dataFieldStartSector = sb.blockBimapStartSector + sb.blockBimapLength;
-        sb.dataFieldLength = sb.blockBimapLength * 8; // 一个字节是8位
+        sb.dataFieldLength = sb.totalSectors - sb.blockBimapStartSector - sb.blockBimapLength; // 一个字节是8位
 
         // 超级块被放置在文件系统管理的扇区的第一个扇区
         Disk::write(PARTITION_1_START, (byte *)&sb);
     }
+
+    printf("build up file system\n"
+           "magic: 0x%x\n"
+           "totalSectors: %d\n"
+           "inode bitmap start: %d, length: %d\n"
+           "inode table start: %d, length: %d\n"
+           "block bitmap start: %d, length: %d\n"
+           "data field start: %d, length: %d\n"
+           "size of super block: %d\n",
+           sb.magic,
+           sb.totalSectors,
+           sb.inodeBitmapStartSector,
+           sb.inodeBitmapLength,
+           sb.inodeTableStartSector,
+           sb.inodeTableLength,
+           sb.blockBimapStartSector,
+           sb.blockBimapLength,
+           sb.dataFieldStartSector,
+           sb.dataFieldLength,
+           sizeof(SuperBlock));
 
     // 初始化打开文件表
     for (int i = 0; i < MAX_SYSTEM_OPENED_FILES; ++i)
@@ -56,9 +80,28 @@ void FileSystem::init()
     blockBitmap.setBitMap(sb.blockBimapStartSector, sb.dataFieldLength);
     inodeBitmap.setBitMap(sb.inodeBitmapStartSector, MAX_FILES);
 
-    // 初始化根目录
-    blockBitmap.set(0, true);
-    inodeBitmap.set(0, true);
+    if(flag) return;
+    
+    // 初始化根目录，保证root的下标均为0
+    dword index = blockBitmap.allocate();
+    printf("%d\n", index);
+    if (index)
+    {
+        printf("root init failed\n");
+        while (1)
+        {
+        }
+    }
+
+    index = inodeBitmap.allocate();
+    printf("%d\n", index);
+    if (index)
+    {
+        printf("root init failed\n");
+        while (1)
+        {
+        }
+    }
 
     DirectoryEntry dir;
 
@@ -75,13 +118,17 @@ void FileSystem::init()
     dir.name[2] = '\0';
     memcpy(&dir, buffer + sizeof(DirectoryEntry), sizeof(DirectoryEntry));
 
-    Disk::write(sb.dataFieldStartSector, buffer, 2 * sizeof(DirectoryEntry));
+    // 首地址必须是字节
+    Disk::writeBytes(sb.dataFieldStartSector * SECTOR_SIZE, buffer, 2 * sizeof(DirectoryEntry));
 
     Inode root;
     root.blocks[0] = sb.dataFieldStartSector;
     root.size = 2 * sizeof(DirectoryEntry);
+    root.blockAmount = 1;
+    root.id = 0;
 
-    Disk::write(sb.inodeTableStartSector, (byte *)&root, sizeof(Inode));
+    // 首地址必须是字节
+    Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(Inode));
 }
 
 // dword FileSystem::openFile(const char *path, bool rw, dword type)

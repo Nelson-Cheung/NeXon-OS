@@ -27,6 +27,19 @@
         printf("create directory in /first dir/, result: %d\n", ans);
         printFileSystem(0, rootDir);
     }
+
+        current = sysFileSystem.getEntryInDirectory(current, "first dir", DIRECTORY_FILE);
+
+    if (current.inode != -1)
+    {
+        ans = sysFileSystem.createEntryInDirectory(current, "first file", REGULAR_FILE);
+        printf("create file in /first dir/, result: %d\n", ans);
+        printFileSystem(0, rootDir);
+
+        ans = sysFileSystem.createEntryInDirectory(current, "first dir", DIRECTORY_FILE);
+        printf("create directory in /first dir/, result: %d\n", ans);
+        printFileSystem(0, rootDir);
+    }
     while (1)
     {
     }

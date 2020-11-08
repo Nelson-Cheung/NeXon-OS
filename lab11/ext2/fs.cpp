@@ -247,21 +247,33 @@ void FileSystem::init()
 //     --openedFiles[handle].count;
 // }
 
-// Inode FileSystem::pathToInode(const char *path, dword type)
-// {
-//     DirectoryEntry dir = getDirectoryOfFile(path);
+Inode FileSystem::pathToInode(const char *path, dword type)
+{
+    DirectoryEntry dir = getDirectoryOfFile(path);
 
-//     char filename[MAX_FILE_NAME];
-//     getFileNameInPath(path, filename);
-//     DirectoryEntry entry = getEntryInDirectory(dir, filename, type);
-//     if (entry.inode == -1)
-//         return Inode();
-//     return getInode(entry.inode);
-// }
+    // 文件目录不存在
+    if(dir.inode == -1) return Inode();
+
+    char filename[MAX_FILE_NAME + 1];
+    getFileNameInPath(path, filename);
+
+    // 特例 "/"
+    if(dir.inode == 0 && strlib::len(filename) == 0) {
+        return getRootInode();
+    }
+
+    if(strlib::len(filename) == 0 ) return Inode();
+
+    DirectoryEntry entry = getEntryInDirectory(dir, filename, type);
+    return getInode(entry.inode);
+}
 
 Inode FileSystem::getInode(dword index)
 {
     Inode inode;
+    if (index == -1)
+        return inode;
+
     dword startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * index;
     Disk::readBytes(startByte, &inode, sizeof(Inode));
     return inode;
@@ -307,8 +319,17 @@ DirectoryEntry FileSystem::getDirectoryOfFile(const char *path)
 
     while (first < last)
     {
-        next = strlib::firstIn(path + first, '/');
+        next = strlib::firstIn(path + first, '/') + first;
+
+        // 非法文件名
+        if (next - first > MAX_FILE_NAME)
+        {
+            printf("invalid file name\n");
+            return DirectoryEntry();
+        }
         strlib::strcpy(path, filename, first, next - first);
+        //printf("file name: %s\n", filename);
+
         current = getEntryInDirectory(current, filename, DIRECTORY_FILE);
 
         // 不存在此目录
@@ -405,6 +426,8 @@ void FileSystem::getFileNameInPath(const char *path, char *filename)
 
 dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
 {
+    if(current.type != DIRECTORY_FILE) return false;
+    
     DirectoryEntry entry;
     dword startByte;
 
@@ -420,16 +443,14 @@ dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const ch
     entry.type = type;
     strlib::strcpy(name, entry.name, 0, strlib::len(name));
 
-    
     Inode inode;
-    
+
     // 初始化entry在inode table对应的inode
     inode.size = 0;
     inode.blockAmount = 0;
     inode.id = entry.inode;
     startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * inode.id;
     Disk::writeBytes(startByte, &inode, sizeof(Inode));
-    
 
     // 更新当前目录
     inode = getInode(current.inode);
@@ -474,8 +495,15 @@ dword FileSystem::allocateDataBlock()
         buffer[i] = 0xff;
     }
     Disk::write(sector + sb.dataFieldStartSector, buffer);
-    printf("allocate datablock: %d\n", sector);
+    //printf("allocate datablock: %d\n", sector);
     return sector + sb.dataFieldStartSector;
+}
+
+Inode FileSystem::getRootInode()
+{
+    Inode root;
+    Disk::readBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(root));
+    return root;
 }
 
 void printFileSystem(dword level, const DirectoryEntry &dir)

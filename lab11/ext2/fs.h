@@ -60,28 +60,31 @@ public:
 
 public:
     // 找到路径path对应的inode
-    Inode pathToInode(const char *path, dword type);
+    Inode pathToInode(const char *path, dword type); // pass
 
     // 找到在inode table中下标为index对应的inode
-    Inode getInode(dword index);
+    Inode getInode(dword index); // pass
 
     // 找到文件所在的目录
-    DirectoryEntry getDirectoryOfFile(const char *path);
+    DirectoryEntry getDirectoryOfFile(const char *path); // pass
 
     // 在给定目录current中找到名字为filename，文件类型为type的目录项
-    DirectoryEntry getEntryInDirectory(const DirectoryEntry &current, const char *filename, dword type);
+    DirectoryEntry getEntryInDirectory(const DirectoryEntry &current, const char *filename, dword type); // pass
 
     // 从路径path中解析出文件名
-    void getFileNameInPath(const char *path, char *filename);
+    void getFileNameInPath(const char *path, char *filename); // pass
 
     // 删除在目录current中名字为name，类型为type的目录项
     dword deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
 
     // 在目录current中新建名字为name，类型为type的目录项
-    dword createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
+    dword createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type); // pass
 
     // 分配一个数据块，若分配成功，则返回逻辑扇区号，否则返回-1
-    dword allocateDataBlock();
+    dword allocateDataBlock(); // pass
+
+    // 获取根目录
+    Inode getRootInode();
 };
 
 FileSystem sysFileSystem;

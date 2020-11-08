@@ -60,7 +60,6 @@ void init()
     // 初始化内核堆内存分配
     sysMemoryManager.initialize();
     // 初始化磁盘驱动
-    // sysDiskManager.initialize();
 }
 
 void secondInit()
@@ -100,12 +99,12 @@ void firstThread(void *arg)
     secondInit();
 
     //sysFileSystem.init();
-
+    /*
     Inode root;
     Disk::readBytes(103 * SECTOR_SIZE, &root, sizeof(root));
     printf("root size: %d, block amount: %d, id: %d, blocks[0]: %d\n",
            root.size, root.blockAmount, root.id, root.blocks[0]);
-    /*
+    
     DirectoryEntry entry;
     Disk::readBytes(492 * SECTOR_SIZE, &entry, sizeof(DirectoryEntry));
     printf("inode: %d, name: %s, type: %d\n",
@@ -141,35 +140,32 @@ void firstThread(void *arg)
     printf("inode: %d\n", entry.inode);
     */
 
-    bool ans;
-    DirectoryEntry rootDir, current;
+    DirectoryEntry dir;
+    Inode inode;
 
-    rootDir.inode = 0;
-    rootDir.type = DIRECTORY_FILE;
+    inode = sysFileSystem.pathToInode("/first dir/first file", REGULAR_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    ans = sysFileSystem.createEntryInDirectory(rootDir, "first file", REGULAR_FILE);
-    printf("create file in /, result: %d\n", ans);
+    inode = sysFileSystem.pathToInode("/first dir", DIRECTORY_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    printFileSystem(0, rootDir);
+    inode = sysFileSystem.pathToInode("/first dir/first file", REGULAR_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    ans = sysFileSystem.createEntryInDirectory(rootDir, "first dir", DIRECTORY_FILE);
-    printf("create directory in /, result: %d\n", ans);
+    inode = sysFileSystem.pathToInode("/first dir/first dir/first file", REGULAR_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    printFileSystem(0, rootDir);
+    inode = sysFileSystem.pathToInode("/first dir/first dir/first file", REGULAR_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    current = sysFileSystem.getEntryInDirectory(rootDir, "first dir", DIRECTORY_FILE);
-    //printf("inode: %d, name: %s, type: %d\n", current.inode, current.name, current.type);
+    inode = sysFileSystem.pathToInode("/", DIRECTORY_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-    if (current.inode != -1)
-    {
-        ans = sysFileSystem.createEntryInDirectory(current, "first file", REGULAR_FILE);
-        printf("create file in /first dir/, result: %d\n", ans);
-        printFileSystem(0, rootDir);
+    inode = sysFileSystem.pathToInode("/first /file", DIRECTORY_FILE);
+    printf("%d %d\n", inode.id, inode.size);
 
-        ans = sysFileSystem.createEntryInDirectory(current, "first dir", DIRECTORY_FILE);
-        printf("create directory in /first dir/, result: %d\n", ans);
-        printFileSystem(0, rootDir);
-    }
+    inode = sysFileSystem.pathToInode("first /file", DIRECTORY_FILE);
+    printf("%d %d\n", inode.id, inode.size);
     while (1)
     {
     }

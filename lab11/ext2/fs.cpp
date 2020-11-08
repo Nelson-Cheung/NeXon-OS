@@ -137,10 +137,14 @@ void FileSystem::init()
     Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(Inode));
 }
 
-dword FileSystem::openFile(const char *path, bool rw)
+dword FileSystem::openFile(const char *path, bool rw, dword type)
 {
-    // 查找是否有对应的文件，只能打开普通文件
-    Inode inode = pathToInode(path, REGULAR_FILE);
+    // 目录文件禁止外界写
+    if (rw == false && type == DIRECTORY_FILE)
+        return false;
+
+    // 查找是否有对应的文件
+    Inode inode = pathToInode(path, type);
 
     // 未找到对应的文件
     if (inode.id == -1)
@@ -150,7 +154,8 @@ dword FileSystem::openFile(const char *path, bool rw)
     // 检查是否已在打开文件表中
     for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
     {
-        if (openedFiles[index].inode.id == inode.id)
+        if (openedFiles[index].inode.id == inode.id &&
+            openedFiles[index].type == type)
             break;
     }
 
@@ -202,6 +207,7 @@ dword FileSystem::openFile(const char *path, bool rw)
         openedFiles[index].inode = inode;
         openedFiles[index].count = 1;
         openedFiles[index].rw = rw;
+        openedFiles[index].type = type;
         return index;
     }
 
@@ -209,7 +215,7 @@ dword FileSystem::openFile(const char *path, bool rw)
     for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
     {
         // 没有进程打开此文件
-        if (openedFiles[index].inode.id == 0)
+        if (openedFiles[index].count == 0)
             break;
     }
 
@@ -218,6 +224,7 @@ dword FileSystem::openFile(const char *path, bool rw)
         openedFiles[index].inode = inode;
         openedFiles[index].count = 1;
         openedFiles[index].rw = rw;
+        openedFiles[index].type = type;
         return index;
     }
 
@@ -231,45 +238,82 @@ dword FileSystem::closeFile(dword handle)
         --openedFiles[handle].count;
 }
 
-// dword FileSystem::deleteFile(const char *path, dword type)
-// {
-//     DirectoryEntry entry = getDirectoryOfFile(path);
-//     if (entry.inode == -1)
-//         return false;
+dword FileSystem::createFile(const char *path, dword type)
+{
+    char filename[MAX_FILE_NAME + 1];
+    getFileNameInPath(path, filename);
 
-//     char filename[MAX_FILE_NAME + 1];
-//     getFileNameInPath(path, filename);
+    if (strlib::len(filename) == 0 ||
+        strlib::strcmp(filename, ".") == 0 ||
+        strlib::strcmp(filename, "..") == 0)
+        return false;
 
-//     return deleteEntryInDirectory(entry, filename, type);
-// }
+    DirectoryEntry entry = getDirectoryOfFile(path);
 
-// dword FileSystem::createFile(const char *path, dword type)
-// {
-//     DirectoryEntry entry = getDirectoryOfFile(path);
-//     if (entry.inode == -1)
-//         return false;
+    //printf("%d %d %s\n", entry.type, entry.inode, filename);
 
-//     char filename[MAX_FILE_NAME + 1];
-//     getFileNameInPath(path, filename);
-//     createEntryInDirectory(entry, filename, REGULAR_FILE);
-// }
+    if (entry.inode == -1)
+        return false;
 
-// dword FileSystem::readFile(dword handle, dword start, void *buf)
-// {
-//     Inode inode = openedFiles[handle].inode;
-//     inode.readBlock(start, buf);
-// }
+    return createEntryInDirectory(entry, filename, type);
+}
 
-// dword FileSystem::writeFile(dword handle, dword start, void *buf)
-// {
-//     if(openedFiles[handle].rw) return false;
-//     openedFiles[handle].inode.writeBlock(start, buf);
-// }
+dword FileSystem::readFileBlock(dword handle, dword block, void *buf)
+{
+    if (handle >= MAX_SYSTEM_OPENED_FILES ||
+        block >= openedFiles[handle].inode.blockAmount)
+        return false;
 
-// dword FileSystem::closeFile(dword handle)
-// {
-//     --openedFiles[handle].count;
-// }
+    openedFiles[handle].inode.readBlock(block, buf);
+    return true;
+}
+
+dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
+{
+    if (handle >= MAX_SYSTEM_OPENED_FILES ||
+        block >= openedFiles[handle].inode.blockAmount)
+        return false;
+
+    openedFiles[handle].inode.writeBlock(block, buf);
+    return true;
+}
+
+dword FileSystem::appendFileBlock(dword handle)
+{
+    dword block = allocateDataBlock();
+    if (block == -1 || handle >= MAX_SYSTEM_OPENED_FILES)
+        return false;
+
+    openedFiles[handle].inode.blockPushBack(block);
+}
+
+dword FileSystem::popFileBlock(dword handle)
+{
+    if (handle >= MAX_SYSTEM_OPENED_FILES)
+        return false;
+
+    dword block = openedFiles[handle].inode.blockPopBack() - sb.dataFieldStartSector;
+    // 在disk bitmap中block只是偏移
+    blockBitmap.release(block);
+    return true;
+}
+
+dword FileSystem::deleteFile(const char *path, dword type)
+{
+    char filename[MAX_FILE_NAME + 1];
+    getFileNameInPath(path, filename);
+
+    if (strlib::len(filename) ||
+        strlib::strcmp(filename, ".") == 0 ||
+        strlib::strcmp(filename, "..") == 0)
+        return false;
+
+    DirectoryEntry entry = getDirectoryOfFile(path);
+    if (entry.inode == -1)
+        return false;
+
+    return deleteEntryInDirectory(entry, filename, type);
+}
 
 Inode FileSystem::pathToInode(const char *path, dword type)
 {
@@ -326,6 +370,8 @@ DirectoryEntry FileSystem::getDirectoryOfFile(const char *path)
     {
         // 根目录
         current.inode = 0;
+        current.type = DIRECTORY_FILE;
+        //strlib::strcpy("/", current.name, 0, strlib::len("/"));
     }
     else if (last == -1)
     {
@@ -413,43 +459,73 @@ void FileSystem::getFileNameInPath(const char *path, char *filename)
     strlib::strcpy(path, filename, start, strlib::len(path) - start);
 }
 
-// dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
-// {
-//     DirectoryEntry entry;
-//     Inode inode = getInode(current.inode);
-//     dword offset;
-//     for (offset = 0; offset < inode.size; offset += sizeof(DirectoryEntry))
-//     {
-//         inode.read(offset, &entry, sizeof(DirectoryEntry));
-//         if (strlib::strcmp(entry.getName(), name) == 0 &&
-//             entry.type == type)
-//         {
-//             dword startByte = inode.size - sizeof(DirectoryEntry);
-//             inode.read(startByte, &entry, sizeof(DirectoryEntry));
-//             inode.write(offset, &entry, sizeof(DirectoryEntry));
-//             inode.size -= sizeof(DirectoryEntry);
+dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
+{
+    DirectoryEntry entry, innerEntry;
+    dword block, offset;
+    bool flag;
+    Inode currentInode = getInode(current.inode);
 
-//             dword blockAmount = (inode.size + SECTOR_SIZE - 1) / SECTOR_SIZE;
-//             if (blockAmount < inode.blockAmount)
-//             {
-//                 if (blockAmount == INODE_BLOCK_DIRECT)
-//                 {
-//                     dword block = inode.blocks[INODE_BLOCK_DIRECT + 0] - sb.dataFieldStartSector;
-//                     blockBitmap.release(block, 1);
-//                 }
-//                 dword block = inode.blockPopBack() - sb.dataFieldStartSector;
-//                 blockBitmap.release(block, 1);
-//             }
+    // 找到name, type对应的Directory Entry
+    for (offset = 0; offset < currentInode.size; offset += sizeof(DirectoryEntry))
+    {
+        flag = currentInode.read(offset, &entry, sizeof(entry));
+        if (!flag)
+        {
+            // 读取文件内容失败
+            return false;
+        }
 
-//             startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * current.inode;
-//             Disk::writeBytes(startByte, &inode, sizeof(Inode));
+        //目录是按照顺序紧密排列的，不会出现分散的情况
+        if (entry.inode == -1)
+            return false;
 
-//             return true;
-//         }
-//     }
+        // 目录项匹配的条件：类型+文件名
+        if (entry.type == type && strlib::strcmp(entry.getName(), name) == 0)
+        {
+            break;
+        }
+    }
 
-//     return false;
-// }
+    Inode entryInode = getInode(entry.inode);
+
+    // 递归删除
+    if (entry.type == DIRECTORY_FILE)
+    {
+        for (int i = 0; i < entryInode.size; i += sizeof(DirectoryEntry))
+        {
+            entryInode.read(i, &innerEntry, sizeof(DirectoryEntry));
+            deleteEntryInDirectory(entry, innerEntry.name, innerEntry.type);
+        }
+    }
+
+    // 释放分配的数据块
+    while (entryInode.blockAmount)
+    {
+        block = entryInode.blockPopBack() - sb.dataFieldStartSector;
+        blockBitmap.release(block);
+    }
+
+    // 删除目录
+    if (currentInode.size > sizeof(DirectoryEntry))
+    {
+        dword lastByte = currentInode.size - sizeof(DirectoryEntry);
+        DirectoryEntry temp;
+        currentInode.read(lastByte, &temp, sizeof(DirectoryEntry));
+        currentInode.write(offset, &temp, sizeof(DirectoryEntry));
+    }
+
+    // 从当前目录中删去指定的目录项
+    currentInode.size -= sizeof(DirectoryEntry);
+    dword blockAmount = stdmath::roundup(currentInode.size, SECTOR_SIZE);
+    while (blockAmount < currentInode.blockAmount)
+    {
+        block = currentInode.blockPopBack() - sb.dataFieldStartSector;
+        blockBitmap.release(block);
+    }
+    Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * currentInode.id, &currentInode, sizeof(Inode));
+    return true;
+}
 
 dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
 {
@@ -538,7 +614,7 @@ void printFileSystem(dword level, const DirectoryEntry &dir)
 {
     for (int i = 0; i < level; ++i)
     {
-        printf(" ");
+        printf("  ");
     }
 
     printf("|-%s\n", dir.name);

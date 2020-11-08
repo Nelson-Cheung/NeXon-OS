@@ -98,37 +98,35 @@ void firstThread(void *arg)
     // 第2次初始化，上层建筑
     secondInit();
 
-    // 模拟多线程
-    dword h1, h2, h3, h4;
+    DirectoryEntry rootDir;
 
-    h1 = sysFileSystem.openFile("/first file", true);
-    h2 = sysFileSystem.openFile("/first file", false);
-    printf("%d %d\n", h1, h2);
+    rootDir.inode = 0;
+    rootDir.type = DIRECTORY_FILE;
 
-    sysFileSystem.closeFile(h1);
-    sysFileSystem.closeFile(h2);
+    /*
+    dword ans = sysFileSystem.createEntryInDirectory(rootDir, "second dir", DIRECTORY_FILE);
+    printf("create file in /, result: %d\n", ans);
+    printFileSystem(0, rootDir);
+    */
 
-    h1 = sysFileSystem.openFile("/first file", false);
-    h2 = sysFileSystem.openFile("/first file", true);
-    printf("%d %d\n", h1, h2);
+    /*
+    sysFileSystem.createFile("/second file", REGULAR_FILE);
+    sysFileSystem.createFile("/second dir", DIRECTORY_FILE);
+    printFileSystem(0, rootDir);
+    */
 
-    sysFileSystem.closeFile(h1);
-    sysFileSystem.closeFile(h2);
+    /*
+    sysFileSystem.createFile("/second dir/second file", REGULAR_FILE);
+    sysFileSystem.createFile("/second dir/second dir", DIRECTORY_FILE);
+    printFileSystem(0, rootDir);
+    */
 
-    h1 = sysFileSystem.openFile("/first file", true);
-    h2 = sysFileSystem.openFile("/first file", true);
-    printf("%d %d\n", h1, h2);
-
-    h3 = sysFileSystem.openFile("/first dir/first file", true);
-    h4 = sysFileSystem.openFile("/first dir/first dir/first file", true);
-
-    printf("%d %d\n", h3, h4);
-
-    sysFileSystem.closeFile(h3);
-    h3 = sysFileSystem.openFile("/first dir/first file", false);
-
-    printf("%d\n", h3);
     
+    sysFileSystem.createFile("/second dir/second dir/second file", REGULAR_FILE);
+    sysFileSystem.createFile("/second dir/second dir/second dir", DIRECTORY_FILE);
+    printFileSystem(0, rootDir);
+
+
     while (1)
     {
     }

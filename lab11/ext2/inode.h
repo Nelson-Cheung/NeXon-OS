@@ -241,24 +241,27 @@ struct Inode
         ++blockAmount;
     }
 
-    // dword blockPopBack()
-    // {
-    //     dword lastBlock;
+    dword blockPopBack()
+    {
+        dword lastBlock;
 
-    //     if (blockAmount < INODE_BLOCK_DIRECT)
-    //     {
-    //         lastBlock = blocks[blockAmount - 1];
-    //     }
-    //     else if (blockAmount < INODE_BLOCK_FIRST)
-    //     {
-    //         dword offset = blockAmount - INODE_BLOCK_DIRECT - 1;
-    //         dword *temp = (dword *)kernelMalloc(SECTOR_SIZE);
-    //         Disk::read(blocks[INODE_BLOCK_DIRECT + 0], (byte *)temp, SECTOR_SIZE);
-    //         lastBlock = temp[offset];
-    //     }
+        if (blockAmount < INODE_BLOCK_DIRECT)
+        {
+            lastBlock = blocks[blockAmount - 1];
+        }
+        else if (blockAmount < INODE_BLOCK_FIRST)
+        {
+            dword offset = blockAmount - INODE_BLOCK_DIRECT;
+            dword *temp = (dword *)kernelMalloc(SECTOR_SIZE);
+            if(!temp) {
+                PANIC::halt(PANIC_MEMORY_EXHAUSTED, "FileSystem::blockPopBack");
+            }
+            Disk::read(blocks[INODE_BLOCK_DIRECT + 0], temp);
+            lastBlock = temp[offset];
+        }
 
-    //     --blockAmount;
-    //     return lastBlock
-    // }
+        --blockAmount;
+        return lastBlock;
+    }
 };
 #endif

@@ -38,16 +38,13 @@ public:
     void init(); // pass
 
     // 按路径path打开文件，创建一个OpenedFile对象放入openedFiles中，并将其下标作为文件句柄返回。未找到或打开文件表已满则返回-1
-    dword openFile(const char *path, bool rw);
+    dword openFile(const char *path, bool rw, dword type); // pass
 
     // 关闭文件
-    dword closeFile(dword handle);
+    dword closeFile(dword handle); // pass
 
-    // 按路径创建文件
-    dword createFile(const char *path, dword type);
-
-    // 清除文件句柄对应的文件内容
-    dword clearFile(dword handle);
+    // 按路径创建目录文件、普通文件
+    dword createFile(const char *path, dword type); // pass
 
     // 读取文件句柄的文件数据块到buffer中，要求buffer需要至少SERCTOR_SIZE的大小
     dword readFileBlock(dword handle, dword block, void *buf);
@@ -56,10 +53,10 @@ public:
     dword writeFileBlock(dword handle, dword block, void *buf);
 
     // 为文件新增一个数据块
-    dword appendNewFileBlock(dword handle);
+    dword appendFileBlock(dword handle);
 
     // 删除文件最后一个数据块
-    dword popLastFileBlock(dword handle);
+    dword popFileBlock(dword handle);
 
     // 按路径删除文件
     dword deleteFile(const char *path, dword type);
@@ -80,9 +77,6 @@ public:
     // 从路径path中解析出文件名
     void getFileNameInPath(const char *path, char *filename); // pass
 
-    // 删除在目录current中名字为name，类型为type的目录项
-    dword deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
-
     // 在目录current中新建名字为name，类型为type的目录项
     dword createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type); // pass
 
@@ -90,7 +84,13 @@ public:
     dword allocateDataBlock(); // pass
 
     // 获取根目录
-    Inode getRootInode();
+    Inode getRootInode(); // pass
+
+    // 删除在目录current中名字为name，类型为type的目录项
+    dword deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
+
+    // 释放inode所占用的数据块
+    dword releaseDataBlockOfInode(dword inodeNumber);
 };
 
 FileSystem sysFileSystem;

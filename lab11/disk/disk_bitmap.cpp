@@ -74,7 +74,7 @@ dword DiskBitMap::allocate()
                     // 置位
                     buffer[j] = buffer[j] | masks[k];
                     // 同步化到磁盘
-                    printf("---%d %d\n", i + start, buffer[j]);
+                    
                     Disk::write(i + start, buffer);
                     kernelFree(buffer);
                     return k + counter;

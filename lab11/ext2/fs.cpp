@@ -80,8 +80,10 @@ void FileSystem::init()
     blockBitmap.setBitMap(sb.blockBimapStartSector, sb.dataFieldLength);
     inodeBitmap.setBitMap(sb.inodeBitmapStartSector, MAX_FILES);
 
-    if(flag) return;
-    
+    // 文件系统存在说明根目录已存在
+    if (flag)
+        return;
+
     // 初始化根目录，保证root的下标均为0
     dword index = blockBitmap.allocate();
     printf("%d\n", index);
@@ -105,7 +107,11 @@ void FileSystem::init()
 
     DirectoryEntry dir;
 
-    byte buffer[2 * sizeof(DirectoryEntry)];
+    byte *buffer = (byte *)kernelMalloc(SECTOR_SIZE);
+    for (int i = 0; i < SECTOR_SIZE; ++i)
+    {
+        buffer[i] = 0xff;
+    }
 
     dir.inode = 0;
     dir.name[0] = '.';
@@ -119,7 +125,7 @@ void FileSystem::init()
     memcpy(&dir, buffer + sizeof(DirectoryEntry), sizeof(DirectoryEntry));
 
     // 首地址必须是字节
-    Disk::writeBytes(sb.dataFieldStartSector * SECTOR_SIZE, buffer, 2 * sizeof(DirectoryEntry));
+    Disk::write(sb.dataFieldStartSector, buffer);
 
     Inode root;
     root.blocks[0] = sb.dataFieldStartSector;
@@ -253,97 +259,111 @@ void FileSystem::init()
 //     return getInode(entry.inode);
 // }
 
-// Inode FileSystem::getInode(dword index)
-// {
-//     Inode inode;
-//     dword startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * index;
-//     Disk::readBytes(startByte, &inode, sizeof(Inode));
-//     return inode;
-// }
-// DirectoryEntry FileSystem::getDirectoryOfFile(const char *path)
-// {
-//     /**********************/
-//     //不考虑当前目录
-//     /**********************/
+Inode FileSystem::getInode(dword index)
+{
+    Inode inode;
+    dword startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * index;
+    Disk::readBytes(startByte, &inode, sizeof(Inode));
+    return inode;
+}
 
-//     dword inodeNumber = 0;
-//     DirectoryEntry entry;
-//     char filename[MAX_FILE_NAME + 1];
+DirectoryEntry FileSystem::getDirectoryOfFile(const char *path)
+{
+    /**********************/
+    //不考虑当前目录
+    /**********************/
 
-//     dword first, last, next, len;
-//     first = strlib::firstIn(path, '/');
-//     last = strlib::firstIn(path, '/');
+    dword inodeNumber = 0;
+    DirectoryEntry entry;
+    char filename[MAX_FILE_NAME + 1];
 
-//     DirectoryEntry current;
+    dword first, last, next, len;
+    first = strlib::firstIn(path, '/');
+    last = strlib::lastIn(path, '/');
 
-//     if (first == 0)
-//     {
-//         // 根目录
-//         current.inode = 0;
-//     }
-//     else if (last == -1)
-//     {
-//         // path就是当前目录下的文件名
-//         current.inode = 0;
-//         return current;
-//     }
-//     else
-//     {
-//         // 暂时不考虑进程当前目录
-//         current.inode = 0;
-//         return current;
-//     }
+    DirectoryEntry current;
 
-//     // 允许多个'/'整合成为一个'/'
-//     while (last >= 0 && path[last] == '/')
-//         --last;
-//     ++last;
+    if (first == 0)
+    {
+        // 根目录
+        current.inode = 0;
+    }
+    else if (last == -1)
+    {
+        // path就是当前目录下的文件名
+        current.inode = -1;
+        return current;
+    }
+    else
+    {
+        // 暂时不考虑进程当前目录
+        current.inode = -1;
+        return current;
+    }
 
-//     while (first < last && path[first] == '/')
-//         ++first;
+    // 允许多个'/'整合成为一个'/'
+    while (first < last && path[first] == '/')
+        ++first;
 
-//     while (first < last)
-//     {
-//         next = strlib::firstIn(path + first, '/');
-//         strlib::strcpy(path, filename, first, next - first);
-//         current = getEntryInDirectory(current, filename, DIRECTORY_FILE);
-//         first = next + 1;
-//         while (first < last && path[first] == '/')
-//             ++first;
-//     }
+    while (first < last)
+    {
+        next = strlib::firstIn(path + first, '/');
+        strlib::strcpy(path, filename, first, next - first);
+        current = getEntryInDirectory(current, filename, DIRECTORY_FILE);
 
-//     return current;
-// }
+        // 不存在此目录
+        if (current.inode == -1)
+            return current;
 
-// DirectoryEntry FileSystem::getEntryInDirectory(const DirectoryEntry &current, const char *filename, dword type)
-// {
-//     Inode inode;
-//     dword startBytes = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * current.inode;
-//     Disk::readBytes(startBytes, &inode, sizeof(Inode));
-//     DirectoryEntry entry;
+        first = next + 1;
+        while (first < last && path[first] == '/')
+            ++first;
+    }
 
-//     for (int offset = 0; offset < inode.size; offset += sizeof(DirectoryEntry))
-//     {
-//         inode.read(offset, &entry, sizeof(entry));
-//         if (entry.inode != -1 && entry.type == type && strlib::strcmp(entry.getName(), filename))
-//         {
-//             return entry;
-//         }
-//     }
+    return current;
+}
 
-//     return DirectoryEntry();
-// }
+DirectoryEntry FileSystem::getEntryInDirectory(const DirectoryEntry &current, const char *filename, dword type)
+{
+    Inode inode;
+    dword startBytes = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * current.inode;
+    Disk::readBytes(startBytes, &inode, sizeof(Inode));
+    DirectoryEntry entry;
+    bool flag;
 
-// void FileSystem::getFileNameInPath(const char *path, char *filename)
-// {
-//     int start = strlib::lastIn(path, '/');
-//     if (start < 0)
-//         start = 0;
-//     else
-//         start += 1;
+    for (int offset = 0; offset < inode.size; offset += sizeof(DirectoryEntry))
+    {
+        flag = inode.read(offset, &entry, sizeof(entry));
+        if (!flag)
+        {
+            // 读取文件内容失败
+            return DirectoryEntry();
+        }
 
-//     strlib::strcpy(path, filename, start, strlib::len(path) - start + 1);
-// }
+        //目录是按照顺序紧密排列的，不会出现分散的情况
+        if (entry.inode == -1)
+            return entry;
+
+        // 目录项匹配的条件：类型+文件名
+        if (entry.type == type && strlib::strcmp(entry.getName(), filename) == 0)
+        {
+            return entry;
+        }
+    }
+
+    return DirectoryEntry();
+}
+
+void FileSystem::getFileNameInPath(const char *path, char *filename)
+{
+    int start = strlib::lastIn(path, '/');
+    if (start < 0)
+        start = 0;
+    else
+        start += 1;
+
+    strlib::strcpy(path, filename, start, strlib::len(path) - start);
+}
 
 // dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
 // {
@@ -382,35 +402,104 @@ void FileSystem::init()
 
 //     return false;
 // }
-// dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
-// {
-//     DirectoryEntry entry;
-//     // 判断是否存在一个目录项
-//     entry = getEntryInDirectory(current, name, type);
-//     if (entry.inode != -1)
-//         return false;
 
-//     entry.inode = inodeBitmap.allocate(1);
-//     if (entry.inode == -1)
-//         return -1;
+dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
+{
+    DirectoryEntry entry;
+    dword startByte;
 
-//     entry.type = type;
-//     strlib::strcpy(name, entry.name, 0, strlib::len(name));
+    // 判断是否存在一个目录项
+    entry = getEntryInDirectory(current, name, type);
+    if (entry.inode != -1)
+        return false;
 
-//     Inode inode = getInode(current.inode);
+    entry.inode = inodeBitmap.allocate();
+    if (entry.inode == -1)
+        return false;
 
-//     // 超出inode现有的数据块大小
-//     if (inode.size + sizeof(DirectoryEntry) > inode.getBlockAmount() * SECTOR_SIZE)
-//     {
-//         dword block = blockBitmap.allocate(1) + sb.dataFieldStartSector;
-//         if (block == -1)
-//             return false;
-//         inode.blockPushBack(block);
-//         dword startBytes = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * inode.id;
-//         Disk::writeBytes(startBytes, &inode, sizeof(Inode));
-//     }
+    entry.type = type;
+    strlib::strcpy(name, entry.name, 0, strlib::len(name));
 
-//     inode.write(inode.size, &entry, sizeof(DirectoryEntry));
+    
+    Inode inode;
+    
+    // 初始化entry在inode table对应的inode
+    inode.size = 0;
+    inode.blockAmount = 0;
+    inode.id = entry.inode;
+    startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * inode.id;
+    Disk::writeBytes(startByte, &inode, sizeof(Inode));
+    
 
-//     return true;
-// }
+    // 更新当前目录
+    inode = getInode(current.inode);
+
+    // 超出inode现有的数据块大小
+
+    if (inode.size + sizeof(DirectoryEntry) > inode.blockAmount * SECTOR_SIZE)
+    {
+        dword block = allocateDataBlock();
+        if (block == -1)
+        {
+            return false;
+        }
+        inode.blockPushBack(block);
+    }
+
+    // 写入目录项
+    inode.write(inode.size, &entry, sizeof(DirectoryEntry));
+
+    // 更新inode
+    inode.size += sizeof(DirectoryEntry);
+    startByte = sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * current.inode;
+    Disk::writeBytes(startByte, &inode, sizeof(Inode));
+
+    return true;
+}
+
+dword FileSystem::allocateDataBlock()
+{
+    // BlockBitMap::allocate分配的是偏移地址
+    dword sector = blockBitmap.allocate();
+    if (sector == -1)
+        return -1;
+
+    byte *buffer = (byte *)kernelMalloc(SECTOR_SIZE);
+    if (!buffer)
+    {
+        PANIC::halt(PANIC_MEMORY_EXHAUSTED, "FileSystem::allocateDataBlock", "kernelMalloc");
+    }
+    for (int i = 0; i < SECTOR_SIZE; ++i)
+    {
+        buffer[i] = 0xff;
+    }
+    Disk::write(sector + sb.dataFieldStartSector, buffer);
+    printf("allocate datablock: %d\n", sector);
+    return sector + sb.dataFieldStartSector;
+}
+
+void printFileSystem(dword level, const DirectoryEntry &dir)
+{
+    for (int i = 0; i < level; ++i)
+    {
+        printf(" ");
+    }
+
+    printf("|-%s\n", dir.name);
+
+    if (dir.type != DIRECTORY_FILE ||
+        strlib::strcmp(dir.name, ".") == 0 ||
+        strlib::strcmp(dir.name, "..") == 0)
+        return;
+
+    Inode inode = sysFileSystem.getInode(dir.inode);
+    DirectoryEntry entry;
+
+    dword size = 0;
+    while (size < inode.size)
+    {
+        inode.read(size, &entry, sizeof(DirectoryEntry));
+        printFileSystem(level + 1, entry);
+        size += sizeof(DirectoryEntry);
+    }
+}

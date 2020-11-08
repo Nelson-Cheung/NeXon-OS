@@ -2,7 +2,7 @@
 #define FS_CONSTANT_H
 
 // 文件名的最大长度
-#define MAX_FILE_NAME 16
+#define MAX_FILE_NAME 15
 // 系统打开文件表数目
 #define MAX_SYSTEM_OPENED_FILES 32
 // 用户打开文件表数目

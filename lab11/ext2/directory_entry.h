@@ -8,9 +8,9 @@
 
 struct DirectoryEntry
 {
-    dword inode;              // 用来描述目录文件的inode在inode table的下标地址
-    char name[MAX_FILE_NAME+1]; // 文件名或目录名
-    dword type;               // 文件类型，普通文件、目录文件和设备文件
+    dword inode;                  // 用来描述目录文件的inode在inode table的下标地址
+    char name[MAX_FILE_NAME + 1]; // 文件名或目录名
+    dword type;                   // 文件类型，普通文件、目录文件和设备文件
 
     DirectoryEntry()
     {
@@ -29,8 +29,9 @@ struct DirectoryEntry
         name[i] = '\0';
     }
 
-    DirectoryEntry &operator=(const DirectoryEntry &entry) {
-                inode = entry.inode;
+    DirectoryEntry &operator=(const DirectoryEntry &entry)
+    {
+        inode = entry.inode;
         type = entry.type;
         int i = 0;
         for (; entry.name[i]; ++i)
@@ -42,15 +43,18 @@ struct DirectoryEntry
         return *this;
     }
 
-    void setName(const char *name) {
+    void setName(const char *name)
+    {
         int i = 0;
-        for(; i < MAX_FILE_NAME && name[i]; ++i ) {
+        for (; i < MAX_FILE_NAME && name[i]; ++i)
+        {
             this->name[i] = name[i];
         }
         this->name[i] = '\0';
     }
 
-    const char *getName() {
+    const char *getName()
+    {
         return name;
     }
 };

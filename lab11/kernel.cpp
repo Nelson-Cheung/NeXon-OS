@@ -16,6 +16,9 @@
 #include "ext2/fs.cpp"
 #include "disk/disk_bitmap.cpp"
 #include "disk/disk.h"
+#include "panic.h"
+#include "ext2/inode.h"
+#include "ext2/directory_entry.h"
 
 void init();
 void firstThread(void *arg);
@@ -63,7 +66,7 @@ void init()
 void secondInit()
 {
     // 初始化文件系统
-    //sysFileSystem.initialize();
+    sysFileSystem.init();
 }
 
 void testThreadReturn(void *arg)
@@ -96,9 +99,78 @@ void firstThread(void *arg)
     // 第2次初始化，上层建筑
     secondInit();
 
-    sysFileSystem.init();
+    //sysFileSystem.init();
 
-    while(1) {
+    Inode root;
+    Disk::readBytes(103 * SECTOR_SIZE, &root, sizeof(root));
+    printf("root size: %d, block amount: %d, id: %d, blocks[0]: %d\n",
+           root.size, root.blockAmount, root.id, root.blocks[0]);
+    /*
+    DirectoryEntry entry;
+    Disk::readBytes(492 * SECTOR_SIZE, &entry, sizeof(DirectoryEntry));
+    printf("inode: %d, name: %s, type: %d\n",
+           entry.inode, entry.name, entry.type);
 
+    printf("%d\n", sizeof(DirectoryEntry));
+    Disk::readBytes(492 * SECTOR_SIZE + sizeof(DirectoryEntry), &entry, sizeof(DirectoryEntry));
+    printf("inode: %d, name: %d %d, type: %d\n",
+           entry.inode, entry.name[0], entry.name[1], entry.type);
+
+        Inode root;
+    Disk::readBytes(103 * SECTOR_SIZE, &root, sizeof(root));
+    
+
+    DirectoryEntry rootDir;
+    rootDir.inode = 0;
+    rootDir.type = DIRECTORY_FILE;
+
+    DirectoryEntry entry;
+
+    entry = sysFileSystem.getEntryInDirectory(rootDir, ".", DIRECTORY_FILE);
+    printf("inode: %d, name: %d %d, type: %d\n",
+           entry.inode, entry.name[0], entry.name[1], entry.type);
+
+    entry = sysFileSystem.getEntryInDirectory(rootDir, "..", DIRECTORY_FILE);
+    printf("inode: %d, name: %d %d, type: %d\n",
+           entry.inode, entry.name[0], entry.name[1], entry.type);
+
+    entry = sysFileSystem.getEntryInDirectory(rootDir, ".", REGULAR_FILE);
+    printf("inode: %d\n", entry.inode);
+
+    entry = sysFileSystem.getEntryInDirectory(rootDir, "nelson", REGULAR_FILE);
+    printf("inode: %d\n", entry.inode);
+    */
+
+    bool ans;
+    DirectoryEntry rootDir, current;
+
+    rootDir.inode = 0;
+    rootDir.type = DIRECTORY_FILE;
+
+    ans = sysFileSystem.createEntryInDirectory(rootDir, "first file", REGULAR_FILE);
+    printf("create file in /, result: %d\n", ans);
+
+    printFileSystem(0, rootDir);
+
+    ans = sysFileSystem.createEntryInDirectory(rootDir, "first dir", DIRECTORY_FILE);
+    printf("create directory in /, result: %d\n", ans);
+
+    printFileSystem(0, rootDir);
+
+    current = sysFileSystem.getEntryInDirectory(rootDir, "first dir", DIRECTORY_FILE);
+    //printf("inode: %d, name: %s, type: %d\n", current.inode, current.name, current.type);
+
+    if (current.inode != -1)
+    {
+        ans = sysFileSystem.createEntryInDirectory(current, "first file", REGULAR_FILE);
+        printf("create file in /first dir/, result: %d\n", ans);
+        printFileSystem(0, rootDir);
+
+        ans = sysFileSystem.createEntryInDirectory(current, "first dir", DIRECTORY_FILE);
+        printf("create directory in /first dir/, result: %d\n", ans);
+        printFileSystem(0, rootDir);
+    }
+    while (1)
+    {
     }
 }

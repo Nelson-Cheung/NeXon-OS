@@ -58,7 +58,7 @@ public:
     // 关闭文件
     dword closeFile(dword handle);
 
-private:
+public:
     // 找到路径path对应的inode
     Inode pathToInode(const char *path, dword type);
 
@@ -79,8 +79,13 @@ private:
 
     // 在目录current中新建名字为name，类型为type的目录项
     dword createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
+
+    // 分配一个数据块，若分配成功，则返回逻辑扇区号，否则返回-1
+    dword allocateDataBlock();
 };
 
 FileSystem sysFileSystem;
+
+
 
 #endif

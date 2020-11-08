@@ -137,75 +137,99 @@ void FileSystem::init()
     Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(Inode));
 }
 
-// dword FileSystem::openFile(const char *path, bool rw, dword type)
-// {
-//     // 先在打开文件表中寻找
-//     Inode inode = pathToInode(path, type);
+dword FileSystem::openFile(const char *path, bool rw)
+{
+    // 查找是否有对应的文件，只能打开普通文件
+    Inode inode = pathToInode(path, REGULAR_FILE);
 
-//     // 未找到对应的文件
-//     if (inode.id == -1)
-//         return -1;
+    // 未找到对应的文件
+    if (inode.id == -1)
+        return -1;
 
-//     dword index;
-//     // 检查是否已在打开文件表中
-//     for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
-//     {
-//         if (openedFiles[index].inode.id == inode.id &&
-//             openedFiles[index].type == type)
-//             break;
-//     }
+    dword index;
+    // 检查是否已在打开文件表中
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        if (openedFiles[index].inode.id == inode.id)
+            break;
+    }
 
-//     // 存在于打开文件表中
-//     /**********************************/
-//     // 应考虑多线程的情况
-//     /*********************************/
-//     if (index < MAX_SYSTEM_OPENED_FILES)
-//     {
-//         // 以读方式打开
-//         if (rw)
-//         {
-//             // 已打开文件是以读方式打开的
-//             if (openedFiles[index].rw)
-//             {
-//                 ++openedFiles[index].count;
-//                 return index;
-//             }
-//             else
-//             {
-//                 return -1;
-//             }
-//         }
-//         else
-//         {
-//             // 以写方式打开，只能有一个写者
-//             if (!openedFiles[index].count)
-//             {
-//                 ++openedFiles[index].count;
-//                 return index;
-//             }
-//             else
-//             {
-//                 return -1;
-//             }
-//         }
-//     }
+    // 存在于打开文件表中
 
-//     for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
-//     {
-//         if (openedFiles[index].count == 0)
-//             break;
-//     }
+    /**********************************/
+    // 应考虑多线程的情况
+    /*********************************/
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        // 以读方式打开
+        if (rw)
+        {
+            // 已打开文件是以读方式打开的
+            if (openedFiles[index].rw)
+            {
+                ++openedFiles[index].count;
+                return index;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            // 以写方式打开，只能有一个写者
+            if (!openedFiles[index].count)
+            {
+                ++openedFiles[index].count;
+                return index;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+    }
 
-//     // 打开文件表已满
+    // 找空位
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        if (openedFiles[index].inode.id == -1)
+            break;
+    }
 
-//     if (index == MAX_SYSTEM_OPENED_FILES)
-//         return -1;
-//     // 将inode加载进内存
-//     openedFiles[index].inode = inode;
-//     openedFiles[index].count = 1;
-//     openedFiles[index].rw = rw;
-//     return index;
-// }
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        openedFiles[index].inode = inode;
+        openedFiles[index].count = 1;
+        openedFiles[index].rw = rw;
+        return index;
+    }
+
+    // 替换其中一个打开文件，FIFO法则
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        // 没有进程打开此文件
+        if (openedFiles[index].inode.id == 0)
+            break;
+    }
+
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        openedFiles[index].inode = inode;
+        openedFiles[index].count = 1;
+        openedFiles[index].rw = rw;
+        return index;
+    }
+
+    // 打开文件表已满
+    return -1;
+}
+
+dword FileSystem::closeFile(dword handle)
+{
+    if (handle >= 0 && handle < MAX_SYSTEM_OPENED_FILES)
+        --openedFiles[handle].count;
+}
 
 // dword FileSystem::deleteFile(const char *path, dword type)
 // {
@@ -252,17 +276,20 @@ Inode FileSystem::pathToInode(const char *path, dword type)
     DirectoryEntry dir = getDirectoryOfFile(path);
 
     // 文件目录不存在
-    if(dir.inode == -1) return Inode();
+    if (dir.inode == -1)
+        return Inode();
 
     char filename[MAX_FILE_NAME + 1];
     getFileNameInPath(path, filename);
 
     // 特例 "/"
-    if(dir.inode == 0 && strlib::len(filename) == 0) {
+    if (dir.inode == 0 && strlib::len(filename) == 0)
+    {
         return getRootInode();
     }
 
-    if(strlib::len(filename) == 0 ) return Inode();
+    if (strlib::len(filename) == 0)
+        return Inode();
 
     DirectoryEntry entry = getEntryInDirectory(dir, filename, type);
     return getInode(entry.inode);
@@ -426,8 +453,9 @@ void FileSystem::getFileNameInPath(const char *path, char *filename)
 
 dword FileSystem::createEntryInDirectory(const DirectoryEntry &current, const char *name, dword type)
 {
-    if(current.type != DIRECTORY_FILE) return false;
-    
+    if (current.type != DIRECTORY_FILE)
+        return false;
+
     DirectoryEntry entry;
     dword startByte;
 

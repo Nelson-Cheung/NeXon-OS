@@ -98,74 +98,37 @@ void firstThread(void *arg)
     // 第2次初始化，上层建筑
     secondInit();
 
-    //sysFileSystem.init();
-    /*
-    Inode root;
-    Disk::readBytes(103 * SECTOR_SIZE, &root, sizeof(root));
-    printf("root size: %d, block amount: %d, id: %d, blocks[0]: %d\n",
-           root.size, root.blockAmount, root.id, root.blocks[0]);
+    // 模拟多线程
+    dword h1, h2, h3, h4;
+
+    h1 = sysFileSystem.openFile("/first file", true);
+    h2 = sysFileSystem.openFile("/first file", false);
+    printf("%d %d\n", h1, h2);
+
+    sysFileSystem.closeFile(h1);
+    sysFileSystem.closeFile(h2);
+
+    h1 = sysFileSystem.openFile("/first file", false);
+    h2 = sysFileSystem.openFile("/first file", true);
+    printf("%d %d\n", h1, h2);
+
+    sysFileSystem.closeFile(h1);
+    sysFileSystem.closeFile(h2);
+
+    h1 = sysFileSystem.openFile("/first file", true);
+    h2 = sysFileSystem.openFile("/first file", true);
+    printf("%d %d\n", h1, h2);
+
+    h3 = sysFileSystem.openFile("/first dir/first file", true);
+    h4 = sysFileSystem.openFile("/first dir/first dir/first file", true);
+
+    printf("%d %d\n", h3, h4);
+
+    sysFileSystem.closeFile(h3);
+    h3 = sysFileSystem.openFile("/first dir/first file", false);
+
+    printf("%d\n", h3);
     
-    DirectoryEntry entry;
-    Disk::readBytes(492 * SECTOR_SIZE, &entry, sizeof(DirectoryEntry));
-    printf("inode: %d, name: %s, type: %d\n",
-           entry.inode, entry.name, entry.type);
-
-    printf("%d\n", sizeof(DirectoryEntry));
-    Disk::readBytes(492 * SECTOR_SIZE + sizeof(DirectoryEntry), &entry, sizeof(DirectoryEntry));
-    printf("inode: %d, name: %d %d, type: %d\n",
-           entry.inode, entry.name[0], entry.name[1], entry.type);
-
-        Inode root;
-    Disk::readBytes(103 * SECTOR_SIZE, &root, sizeof(root));
-    
-
-    DirectoryEntry rootDir;
-    rootDir.inode = 0;
-    rootDir.type = DIRECTORY_FILE;
-
-    DirectoryEntry entry;
-
-    entry = sysFileSystem.getEntryInDirectory(rootDir, ".", DIRECTORY_FILE);
-    printf("inode: %d, name: %d %d, type: %d\n",
-           entry.inode, entry.name[0], entry.name[1], entry.type);
-
-    entry = sysFileSystem.getEntryInDirectory(rootDir, "..", DIRECTORY_FILE);
-    printf("inode: %d, name: %d %d, type: %d\n",
-           entry.inode, entry.name[0], entry.name[1], entry.type);
-
-    entry = sysFileSystem.getEntryInDirectory(rootDir, ".", REGULAR_FILE);
-    printf("inode: %d\n", entry.inode);
-
-    entry = sysFileSystem.getEntryInDirectory(rootDir, "nelson", REGULAR_FILE);
-    printf("inode: %d\n", entry.inode);
-    */
-
-    DirectoryEntry dir;
-    Inode inode;
-
-    inode = sysFileSystem.pathToInode("/first dir/first file", REGULAR_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/first dir", DIRECTORY_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/first dir/first file", REGULAR_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/first dir/first dir/first file", REGULAR_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/first dir/first dir/first file", REGULAR_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/", DIRECTORY_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("/first /file", DIRECTORY_FILE);
-    printf("%d %d\n", inode.id, inode.size);
-
-    inode = sysFileSystem.pathToInode("first /file", DIRECTORY_FILE);
-    printf("%d %d\n", inode.id, inode.size);
     while (1)
     {
     }

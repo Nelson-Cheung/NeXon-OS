@@ -35,13 +35,13 @@ public:
     FileSystem();
 
     // 初始化，查看磁盘中是否建立了文件系统，若为建立，则需要建立一个后写入
-    void init();
+    void init(); // pass
 
     // 按路径path打开文件，创建一个OpenedFile对象放入openedFiles中，并将其下标作为文件句柄返回。未找到或打开文件表已满则返回-1
-    dword openFile(const char *path, bool rw, dword type);
+    dword openFile(const char *path, bool rw);
 
-    // 按路径删除文件
-    dword deleteFile(const char *path, dword type);
+    // 关闭文件
+    dword closeFile(dword handle);
 
     // 按路径创建文件
     dword createFile(const char *path, dword type);
@@ -50,13 +50,19 @@ public:
     dword clearFile(dword handle);
 
     // 读取文件句柄的文件数据块到buffer中，要求buffer需要至少SERCTOR_SIZE的大小
-    dword readFile(dword handle, dword start, void *buf);
+    dword readFileBlock(dword handle, dword block, void *buf);
 
-    // 写入文件句柄的文件内容到buffer中
-    dword writeFile(dword handle, dword start, void *buf);
+    // 将buffer的内容写到文件已存在的块中
+    dword writeFileBlock(dword handle, dword block, void *buf);
 
-    // 关闭文件
-    dword closeFile(dword handle);
+    // 为文件新增一个数据块
+    dword appendNewFileBlock(dword handle);
+
+    // 删除文件最后一个数据块
+    dword popLastFileBlock(dword handle);
+
+    // 按路径删除文件
+    dword deleteFile(const char *path, dword type);
 
 public:
     // 找到路径path对应的inode
@@ -88,7 +94,5 @@ public:
 };
 
 FileSystem sysFileSystem;
-
-
 
 #endif

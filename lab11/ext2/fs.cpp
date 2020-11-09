@@ -274,7 +274,26 @@ dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
         block >= openedFiles[handle].inode.blockAmount)
         return false;
 
+    dword blockAmount = openedFiles[handle].inode.blockAmount;
+    dword size = openedFiles[handle].inode.size;
+
+    // 写最后一个文件块(不一定是最后一个数据块)时文件大小会发生变化
+
+    if (block == size/ SECTOR_SIZE)
+    {
+        openedFiles[handle].inode.size = block * SECTOR_SIZE + strlib::len((char *)buf);
+        // 同步化到磁盘
+        Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
+                         &(openedFiles[handle].inode), sizeof(Inode));
+    }
+    else if (strlib::len((char *)buf) != SECTOR_SIZE) 
+    {
+        // 写中间的文件块不允许出现'\0'
+        return false;
+    }
+
     openedFiles[handle].inode.writeBlock(block, buf);
+
     return true;
 }
 
@@ -293,8 +312,11 @@ dword FileSystem::popFileBlock(dword handle)
         return false;
 
     dword block = openedFiles[handle].inode.blockPopBack() - sb.dataFieldStartSector;
-    // 在disk bitmap中block只是偏移
     blockBitmap.release(block);
+    openedFiles[handle].inode.size = openedFiles[handle].inode.blockAmount * SECTOR_SIZE;
+    // 同步化到磁盘
+    Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
+                     &(openedFiles[handle].inode), sizeof(Inode));
     return true;
 }
 
@@ -303,8 +325,7 @@ dword FileSystem::deleteFile(const char *path, dword type)
     char filename[MAX_FILE_NAME + 1];
     getFileNameInPath(path, filename);
 
-
-    if (strlib::len(filename) == 0||
+    if (strlib::len(filename) == 0 ||
         strlib::strcmp(filename, ".") == 0 ||
         strlib::strcmp(filename, "..") == 0)
         return false;
@@ -313,7 +334,6 @@ dword FileSystem::deleteFile(const char *path, dword type)
 
     if (entry.inode == -1)
         return false;
-
 
     return deleteEntryInDirectory(entry, filename, type);
 }
@@ -491,7 +511,8 @@ dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const ch
     }
 
     // 无相关文件
-    if(offset == currentInode.size) return false;
+    if (offset == currentInode.size)
+        return false;
 
     Inode entryInode = getInode(entry.inode);
 
@@ -608,7 +629,7 @@ dword FileSystem::allocateDataBlock()
         buffer[i] = 0xff;
     }
     Disk::write(sector + sb.dataFieldStartSector, buffer);
-   // printf("allocate datablock: %d\n", sector);
+    // printf("allocate datablock: %d\n", sector);
     return sector + sb.dataFieldStartSector;
 }
 
@@ -630,7 +651,7 @@ void printFileSystem(dword level, const DirectoryEntry &dir)
 
     if (dir.type != DIRECTORY_FILE ||
         strlib::strcmp(dir.name, ".") == 0 ||
-        strlib::strcmp(dir.name, "..") == 0) 
+        strlib::strcmp(dir.name, "..") == 0)
         return;
 
     Inode inode = sysFileSystem.getInode(dir.inode);
@@ -644,4 +665,8 @@ void printFileSystem(dword level, const DirectoryEntry &dir)
         printFileSystem(level + 1, entry);
         size += sizeof(DirectoryEntry);
     }
+}
+
+void readFileContent(dword handle, void *buffer)
+{
 }

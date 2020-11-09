@@ -88,9 +88,6 @@ public:
 
     // 删除在目录current中名字为name，类型为type的目录项
     dword deleteEntryInDirectory(const DirectoryEntry &current, const char *name, dword type);
-
-    // 释放inode所占用的数据块
-    dword releaseDataBlockOfInode(dword inodeNumber);
 };
 
 FileSystem sysFileSystem;

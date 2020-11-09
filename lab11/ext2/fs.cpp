@@ -303,14 +303,17 @@ dword FileSystem::deleteFile(const char *path, dword type)
     char filename[MAX_FILE_NAME + 1];
     getFileNameInPath(path, filename);
 
-    if (strlib::len(filename) ||
+
+    if (strlib::len(filename) == 0||
         strlib::strcmp(filename, ".") == 0 ||
         strlib::strcmp(filename, "..") == 0)
         return false;
 
     DirectoryEntry entry = getDirectoryOfFile(path);
+
     if (entry.inode == -1)
         return false;
+
 
     return deleteEntryInDirectory(entry, filename, type);
 }
@@ -487,6 +490,9 @@ dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const ch
         }
     }
 
+    // 无相关文件
+    if(offset == currentInode.size) return false;
+
     Inode entryInode = getInode(entry.inode);
 
     // 递归删除
@@ -511,6 +517,7 @@ dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const ch
     {
         dword lastByte = currentInode.size - sizeof(DirectoryEntry);
         DirectoryEntry temp;
+        // 用最后一个目录项来填补当前的目录项，以实现目录项的紧密排列
         currentInode.read(lastByte, &temp, sizeof(DirectoryEntry));
         currentInode.write(offset, &temp, sizeof(DirectoryEntry));
     }
@@ -523,6 +530,8 @@ dword FileSystem::deleteEntryInDirectory(const DirectoryEntry &current, const ch
         block = currentInode.blockPopBack() - sb.dataFieldStartSector;
         blockBitmap.release(block);
     }
+
+    // 从inode table中删去该目录
     Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * currentInode.id, &currentInode, sizeof(Inode));
     return true;
 }
@@ -599,7 +608,7 @@ dword FileSystem::allocateDataBlock()
         buffer[i] = 0xff;
     }
     Disk::write(sector + sb.dataFieldStartSector, buffer);
-    //printf("allocate datablock: %d\n", sector);
+   // printf("allocate datablock: %d\n", sector);
     return sector + sb.dataFieldStartSector;
 }
 
@@ -621,10 +630,11 @@ void printFileSystem(dword level, const DirectoryEntry &dir)
 
     if (dir.type != DIRECTORY_FILE ||
         strlib::strcmp(dir.name, ".") == 0 ||
-        strlib::strcmp(dir.name, "..") == 0)
+        strlib::strcmp(dir.name, "..") == 0) 
         return;
 
     Inode inode = sysFileSystem.getInode(dir.inode);
+
     DirectoryEntry entry;
 
     dword size = 0;

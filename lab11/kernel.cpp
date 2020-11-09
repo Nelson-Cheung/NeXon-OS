@@ -103,28 +103,8 @@ void firstThread(void *arg)
     rootDir.inode = 0;
     rootDir.type = DIRECTORY_FILE;
 
-    /*
-    dword ans = sysFileSystem.createEntryInDirectory(rootDir, "second dir", DIRECTORY_FILE);
-    printf("create file in /, result: %d\n", ans);
-    printFileSystem(0, rootDir);
-    */
+    //printFileSystem(0, rootDir);
 
-    /*
-    sysFileSystem.createFile("/second file", REGULAR_FILE);
-    sysFileSystem.createFile("/second dir", DIRECTORY_FILE);
-    printFileSystem(0, rootDir);
-    */
-
-    /*
-    sysFileSystem.createFile("/second dir/second file", REGULAR_FILE);
-    sysFileSystem.createFile("/second dir/second dir", DIRECTORY_FILE);
-    printFileSystem(0, rootDir);
-    */
-
-    
-    sysFileSystem.createFile("/second dir/second dir/second file", REGULAR_FILE);
-    sysFileSystem.createFile("/second dir/second dir/second dir", DIRECTORY_FILE);
-    printFileSystem(0, rootDir);
 
 
     while (1)

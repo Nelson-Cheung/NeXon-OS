@@ -243,6 +243,8 @@ struct Inode
 
     dword blockPopBack()
     {
+        if(!blockAmount) return -1;
+        
         dword lastBlock;
 
         if (blockAmount < INODE_BLOCK_DIRECT)

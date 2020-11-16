@@ -15,21 +15,19 @@ void startProcess(void *filename)
     PCB *pcb = (PCB *)_running_thread();
     ThreadInterruptStack *interruptStack = (ThreadInterruptStack *)((dword)pcb->stack + sizeof(ThreadStack));
 
-    interruptStack->edi =
-        interruptStack->esi =
-            interruptStack->ebp =
-                interruptStack->esp_dummy =
-                    interruptStack->ebx =
-                        interruptStack->ecx =
-                            interruptStack->eax =
-                                interruptStack->gs = 0;
+    interruptStack->edi = 0;
+    interruptStack->esi = 0;
+    interruptStack->ebp = 0;
+    interruptStack->esp_dummy = 0;
+    interruptStack->ebx = 0;
+    interruptStack->ecx = 0;
+    interruptStack->eax = 0;
+    interruptStack->gs = 0;
 
-    //interruptStack->gs = 0x18;
-
-    interruptStack->fs =
-        interruptStack->es =
-            interruptStack->ss =
-                interruptStack->ds = 0x3b;
+    interruptStack->fs = 0x3b;
+    interruptStack->es = 0x3b;
+    interruptStack->ss = 0x3b;
+    interruptStack->ds = 0x3b;
 
     interruptStack->eip = (dword)filename;
     interruptStack->cs = 0x33;                                // 用户模式平坦模式

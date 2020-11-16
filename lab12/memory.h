@@ -3,8 +3,9 @@
 
 #include "type.h"
 #include "bitmap.h"
-#include "sync.h"
-#include "addresspool.h"
+
+#include "program/addresspool.h"
+#include "program/program_manager.h"
 
 #define BITMAP_START_ADDRESS 0xc0010000
 #define PAGE_SIZE 4096
@@ -65,28 +66,28 @@ struct MemoryBlockListItem
 
 // MemoryManager是在内核态调用的内存管理对象
 
-class MemoryManager
-{
+// class MemoryManager
+// {
 
-private:
-    // 16, 32, 64, 128, 256, 512, 1024
-    static const dword MEM_BLOCK_TYPES = 7; // 内存块的类型数目
-    static const dword minSize = 16;        // 内存块的最小大小
-    dword arenaSize[MEM_BLOCK_TYPES];       // 每种类型对应的内存块大小
-    MemoryBlockListItem *arenas[MEM_BLOCK_TYPES]; // 每种类型的arena内存块的指针
-    Semaphore mutex;
+// private:
+//     // 16, 32, 64, 128, 256, 512, 1024
+//     static const dword MEM_BLOCK_TYPES = 7; // 内存块的类型数目
+//     static const dword minSize = 16;        // 内存块的最小大小
+//     dword arenaSize[MEM_BLOCK_TYPES];       // 每种类型对应的内存块大小
+//     MemoryBlockListItem *arenas[MEM_BLOCK_TYPES]; // 每种类型的arena内存块的指针
+//     Semaphore mutex;
 
-public:
-    MemoryManager();
-    void initialize();
-    void *allocate(dword size);  // 分配一块地址
-    void release(void *address); // 释放一块地址
+// public:
+//     MemoryManager();
+//     void initialize();
+//     void *allocate(dword size);  // 分配一块地址
+//     void release(void *address); // 释放一块地址
 
-private:
-    bool getNewArena(AddressPoolType type, dword index);
+// private:
+//     bool getNewArena(AddressPoolType type, dword index);
 
-};
+// };
 
-MemoryManager sysMemoryManager;
+// MemoryManager sysMemoryManager;
 
 #endif

@@ -6,20 +6,11 @@
 #include "cstdio.h"
 #include "bitmap.cpp"
 #include "memory.cpp"
-#include "thread.cpp"
-#include "sync.cpp"
-#include "tss.h"
-#include "process.cpp"
-#include "addresspool.cpp"
-#include "threadlist.cpp"
-#include "syscall.cpp"
-#include "ext2/fs.cpp"
-#include "disk/disk_bitmap.cpp"
-#include "disk/disk.h"
-#include "panic.h"
-#include "ext2/inode.h"
-#include "ext2/directory_entry.h"
+
 #include "program/program_manager.cpp"
+#include "program/threadlist.cpp"
+#include "program/addresspool.cpp"
+#include "syscall.cpp"
 
 void init();
 void firstThread(void *arg);
@@ -32,6 +23,16 @@ void Kernel()
     // 初始化
     init();
 
+    dword pid = sysProgramManager.executeThread(firstThread, nullptr, "first thread", 2);
+    ThreadListItem *item = sysProgramManager.readyPrograms.front();
+    PCB *thread = (PCB *)(((dword)item) & 0xfffff000);
+    thread->status = ThreadStatus::RUNNING;
+    sysProgramManager.currentRunning = thread;
+    sysProgramManager.readyPrograms.pop_front();
+
+    _switch_thread_to((void *)0x9f000, thread);
+
+    /*
     dword pid = createThread(&firstThread, nullptr, 2);
 
     PCB *next = elem2entry(PCB, tagInGeneralList, _ready_threads.front());
@@ -41,6 +42,7 @@ void Kernel()
     next->status = ThreadStatus::RUNNING;
     _ready_threads.pop_front();
     _switch_thread_to((void *)0x9f000, next);
+    */
 
     while (1)
         ;
@@ -50,72 +52,45 @@ void init()
 {
     // 32MB内存，bochs内置
     initMemoryPool(0x2000000);
-    _all_threads.initialize();
-    _ready_threads.initialize();
-    PID = 0;
 
-    // 初始化TSS
-    tss.initialize();
     // 初始化系统调用表
     sysInitializeSysCall();
+
+    // 初始化程序管理器
+    sysProgramManager.initialize();
+
+    // 初始化TSS
+    //tss.initialize();
     // 初始化内核堆内存分配
-    sysMemoryManager.initialize();
-    // 初始化磁盘驱动
+    //sysMemoryManager.initialize();
 }
 
-void secondInit()
+void secondThread(void *arg)
 {
-    // 初始化文件系统
-    sysFileSystem.init();
+    PCB *cur = sysProgramManager.running();
+
+    printf("thread, pid: 0x%x, pcb: 0x%x, name: %s\n", cur->pid, cur, cur->name);
 }
 
-void testThreadReturn(void *arg)
-{
-    for (int i = 0; i < 5; ++i)
-    {
-        dword temp = 0xffffff;
-        while (temp)
-            --temp;
-        printf("I will return\n");
-    }
-
-    printf("ok, I return\n");
-}
-
-void testThreadNotReturn(void *arg)
-{
-
-    fork();
-
-    PCB *process = (PCB *)_running_thread();
-    if (process->pid)
-    {
-        printf("I am child, %d\n", process->pid);
-    }
-    else
-    {
-        printf("I am father, %d\n", process->pid);
-    }
-
-    while (1)
-    {
-    }
-}
 void firstThread(void *arg)
 {
     _enable_interrupt();
 
-    // 第2次初始化，上层建筑
-    secondInit();
+    PCB *cur = sysProgramManager.running();
 
-    printf("%x\n", _switch_thread_to);
-    //while(1) {}
+    printf("thread, pid: 0x%x, pcb: 0x%x\n", cur->pid, cur);
 
-    //createThread(testThreadNotReturn, nullptr, 1);
-    executeProcess((void *)testThreadNotReturn, "", 1);
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 2", 1);
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 3", 1);
+
+
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 2", 1);
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 3", 1);
 
     while (1)
     {
-
+        //printf("YES\n");
     }
 }

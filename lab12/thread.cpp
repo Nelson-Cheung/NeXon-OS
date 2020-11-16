@@ -9,7 +9,8 @@ void kernelThread(ThreadFunction *function, void *arg)
     function(arg);
 }
 
-void kernelThreadReturn() {
+void kernelThreadReturn()   
+{
     bool status = _interrupt_status();
     _disable_interrupt();
 
@@ -38,13 +39,17 @@ dword createThread(ThreadFunction func, void *arg, byte priority)
     thread->ticksPassedBy = 0;
     thread->pageDir = nullptr;
     thread->magic = 0x19241112;
-    
+
     // 初始化文件描述符数组
-    for( dword i = 0; i < MAX_FILE_OPEN_PER_PROCESS; ++i ) {
-        if( i < 3 ) {
+    for (dword i = 0; i < MAX_FILE_OPEN_PER_PROCESS; ++i)
+    {
+        if (i < 3)
+        {
             // 预留三个标准输入流，标准输出流，标准错误流
             thread->fileDescriptors[i] = i;
-        } else {
+        }
+        else
+        {
             thread->fileDescriptors[i] = -1;
         }
     }
@@ -61,10 +66,10 @@ dword createThread(ThreadFunction func, void *arg, byte priority)
     threadStack->unusedAddress = (dword)kernelThreadReturn; // kernelThread返回地址
     threadStack->function = func;
     threadStack->funcArg = arg;
-    threadStack->ebp =
-        threadStack->ebx =
-            threadStack->esi =
-                threadStack->edi = 0;
+    threadStack->ebp = 0;
+    threadStack->ebx = 0;
+    threadStack->esi = 0;
+    threadStack->edi = 0;
 
     bool interruptStatus = _interrupt_status();
     _disable_interrupt();
@@ -92,16 +97,15 @@ void _schedule_thread()
     }
     else
     {
-
     }
 
     PCB *next = elem2entry(PCB, tagInGeneralList, _ready_threads.front());
     currentRunningThread = next;
-    
+
     _ready_threads.pop_front();
     next->status = ThreadStatus::RUNNING;
 
-    activatePageTab(next);  
+    activatePageTab(next);
     //printf("pcb 0x%x\n", next);
     _switch_thread_to(cur, next);
     _enable_interrupt();
@@ -118,10 +122,9 @@ void _wake_up_thread(PCB *thread)
 {
     thread->status = ThreadStatus::READY;
     _ready_threads.push_front(&(thread->tagInGeneralList));
-    // 必须要立即唤醒，否则可能永远也无法唤醒
-    //  _schedule_thread();
 }
 
-void *_running_thread() {
+void *_running_thread()
+{
     return currentRunningThread;
 }

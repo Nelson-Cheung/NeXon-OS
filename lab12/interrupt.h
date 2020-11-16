@@ -4,7 +4,8 @@
 #include "type.h"
 #include "oslib.h"
 #include "string.h"
-#include "thread.h"
+#include "program/thread.h"
+#include "program/program_manager.h"
 
 extern "C" void KeyboardInterruptResponse(dword param);
 extern "C" void TimeInterruptResponse();
@@ -94,8 +95,8 @@ void KeyboardInterruptResponse(dword param)
 
 void TimeInterruptResponse()
 {
-    PCB *cur = (PCB *)_running_thread();
-
+    PCB *cur = sysProgramManager.running();
+    
     if (!cur->ticks)
     {
         userScheduleThread();

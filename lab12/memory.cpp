@@ -51,7 +51,7 @@ void *allocateVirtualPages(enum AddressPoolType type, const dword count)
     }
     else if (type == AddressPoolType::USER)
     {
-        PCB *ptr = (PCB *)_running_thread();
+        PCB *ptr = sysProgramManager.running();
         start = ptr->userVaddr.allocate(count);
     }
 
@@ -155,7 +155,7 @@ void releasePage(const dword virtualAddress, const dword count)
 
     dword *pte = nullptr;
     dword temp = virtualAddress;
-    PCB *pcb = (PCB *)_running_thread();
+    PCB *pcb = sysProgramManager.running();
 
     for (int i = 0; i < count; ++i)
     {
@@ -189,7 +189,7 @@ void releaseKernelPage(const dword virtualAddress, const dword count)
 
     dword *pte = nullptr;
     dword temp = virtualAddress;
-    PCB *pcb = (PCB *)_running_thread();
+    PCB *pcb = sysProgramManager.running();
 
     for (int i = 0; i < count; ++i)
     {
@@ -202,183 +202,184 @@ void releaseKernelPage(const dword virtualAddress, const dword count)
 
     kernelVrirtualPool.release(virtualAddress, count);
 }
-MemoryManager::MemoryManager()
-{
-    initialize();
-}
 
-void MemoryManager::initialize()
-{
-    dword size = minSize;
-    for (int i = 0; i < MEM_BLOCK_TYPES; ++i)
-    {
-        arenas[i] = nullptr;
-        arenaSize[i] = size;
-        size = size << 1;
-    }
-    mutex.initialize(1); // 内存分配和释放时实现互斥
-}
+// MemoryManager::MemoryManager()
+// {
+//     initialize();
+// }
 
-void *MemoryManager::allocate(dword size)
-{
-    dword index = 0;
-    while (index < MEM_BLOCK_TYPES && arenaSize[index] < size)
-        ++index;
+// void MemoryManager::initialize()
+// {
+//     dword size = minSize;
+//     for (int i = 0; i < MEM_BLOCK_TYPES; ++i)
+//     {
+//         arenas[i] = nullptr;
+//         arenaSize[i] = size;
+//         size = size << 1;
+//     }
+//     mutex.initialize(1); // 内存分配和释放时实现互斥
+// }
 
-    PCB *pcb = (PCB *)_running_thread();
-    AddressPoolType poolType = (pcb->pageDir) ? AddressPoolType::USER : AddressPoolType::KERNEL;
-    void *ans = nullptr;
+// void *MemoryManager::allocate(dword size)
+// {
+//     dword index = 0;
+//     while (index < MEM_BLOCK_TYPES && arenaSize[index] < size)
+//         ++index;
 
-    if (index == MEM_BLOCK_TYPES)
-    {
-        // 上取整
-        dword pageAmount = (size + sizeof(Arena) + PAGE_SIZE - 1) / PAGE_SIZE;
+//     PCB *pcb = sysProgramManager.running();
+//     AddressPoolType poolType = (pcb->pageDir) ? AddressPoolType::USER : AddressPoolType::KERNEL;
+//     void *ans = nullptr;
 
-        mutex.P();
-        ans = allocatePages(poolType, pageAmount);
-        mutex.V();
+//     if (index == MEM_BLOCK_TYPES)
+//     {
+//         // 上取整
+//         dword pageAmount = (size + sizeof(Arena) + PAGE_SIZE - 1) / PAGE_SIZE;
 
-        if (ans)
-        {
-            Arena *arena = (Arena *)ans;
-            arena->type = ArenaType::ARENA_MORE;
-            arena->counter = pageAmount;
-        }
-    }
-    else
-    {
-        //printf("---MemoryManager::allocate----\n");
-        if (arenas[index] == nullptr)
-        {
-            if (!getNewArena(poolType, index))
-                return nullptr;
-        }
+//         mutex.P();
+//         ans = allocatePages(poolType, pageAmount);
+//         mutex.V();
 
-        // 每次取出内存块链表中的第一个内存块
-        ans = arenas[index];
-        arenas[index] = ((MemoryBlockListItem *)ans)->next;
+//         if (ans)
+//         {
+//             Arena *arena = (Arena *)ans;
+//             arena->type = ArenaType::ARENA_MORE;
+//             arena->counter = pageAmount;
+//         }
+//     }
+//     else
+//     {
+//         //printf("---MemoryManager::allocate----\n");
+//         if (arenas[index] == nullptr)
+//         {
+//             if (!getNewArena(poolType, index))
+//                 return nullptr;
+//         }
 
-        if (arenas[index])
-        {
-            (arenas[index])->previous = nullptr;
-        }
+//         // 每次取出内存块链表中的第一个内存块
+//         ans = arenas[index];
+//         arenas[index] = ((MemoryBlockListItem *)ans)->next;
 
-        Arena *arena = (Arena *)((dword)ans & 0xfffff000);
-        --(arena->counter);
-        //printf("---MemoryManager::allocate----\n");
-    }
+//         if (arenas[index])
+//         {
+//             (arenas[index])->previous = nullptr;
+//         }
 
-    return ans;
-}
+//         Arena *arena = (Arena *)((dword)ans & 0xfffff000);
+//         --(arena->counter);
+//         //printf("---MemoryManager::allocate----\n");
+//     }
 
-bool MemoryManager::getNewArena(AddressPoolType type, dword index)
-{
-    mutex.P();
-    void *ptr = allocatePages(type, 1);
-    mutex.V();
+//     return ans;
+// }
 
-    if (ptr == nullptr)
-        return false;
+// bool MemoryManager::getNewArena(AddressPoolType type, dword index)
+// {
+//     mutex.P();
+//     void *ptr = allocatePages(type, 1);
+//     mutex.V();
 
-    // 内存块的数量
-    dword times = (PAGE_SIZE - sizeof(Arena)) / arenaSize[index];
-    // 内存块的起始地址
-    dword address = (dword)ptr + sizeof(Arena);
+//     if (ptr == nullptr)
+//         return false;
 
-    // 记录下内存块的数据
-    Arena *arena = (Arena *)ptr;
-    arena->type = (ArenaType)index;
-    arena->counter = times;
-    // printf("---MemoryManager::getNewArena: type: %d, arena->counter: %d\n", index, arena->counter);
+//     // 内存块的数量
+//     dword times = (PAGE_SIZE - sizeof(Arena)) / arenaSize[index];
+//     // 内存块的起始地址
+//     dword address = (dword)ptr + sizeof(Arena);
 
-    MemoryBlockListItem *prevPtr = (MemoryBlockListItem *)address;
-    MemoryBlockListItem *curPtr = nullptr;
-    arenas[index] = prevPtr;
-    prevPtr->previous = nullptr;
-    prevPtr->next = nullptr;
-    --times;
+//     // 记录下内存块的数据
+//     Arena *arena = (Arena *)ptr;
+//     arena->type = (ArenaType)index;
+//     arena->counter = times;
+//     // printf("---MemoryManager::getNewArena: type: %d, arena->counter: %d\n", index, arena->counter);
 
-    while (times)
-    {
-        address += arenaSize[index];
-        curPtr = (MemoryBlockListItem *)address;
-        prevPtr->next = curPtr;
-        curPtr->previous = prevPtr;
-        curPtr->next = nullptr;
-        prevPtr = curPtr;
-        --times;
-    }
+//     MemoryBlockListItem *prevPtr = (MemoryBlockListItem *)address;
+//     MemoryBlockListItem *curPtr = nullptr;
+//     arenas[index] = prevPtr;
+//     prevPtr->previous = nullptr;
+//     prevPtr->next = nullptr;
+//     --times;
 
-    return true;
-}
+//     while (times)
+//     {
+//         address += arenaSize[index];
+//         curPtr = (MemoryBlockListItem *)address;
+//         prevPtr->next = curPtr;
+//         curPtr->previous = prevPtr;
+//         curPtr->next = nullptr;
+//         prevPtr = curPtr;
+//         --times;
+//     }
 
-void MemoryManager::release(void *address)
-{
-    // 由于Arena是按页分配的，所以其首地址的低12位必定0，
-    // 其中划分的内存块的高20位也必定与其所在的Arena首地址相同
-    Arena *arena = (Arena *)((dword)address & 0xfffff000);
+//     return true;
+// }
 
-    if (arena->type == ARENA_MORE)
-    {
-        dword address = (dword)arena;
+// void MemoryManager::release(void *address)
+// {
+//     // 由于Arena是按页分配的，所以其首地址的低12位必定0，
+//     // 其中划分的内存块的高20位也必定与其所在的Arena首地址相同
+//     Arena *arena = (Arena *)((dword)address & 0xfffff000);
 
-        mutex.P();
-        releasePage(address, arena->counter);
-        mutex.V();
-    }
-    else
-    {
-        MemoryBlockListItem *itemPtr = (MemoryBlockListItem *)address;
-        itemPtr->next = arenas[arena->type];
-        itemPtr->previous = nullptr;
+//     if (arena->type == ARENA_MORE)
+//     {
+//         dword address = (dword)arena;
 
-        if (itemPtr->next)
-        {
-            itemPtr->next->previous = itemPtr;
-        }
+//         mutex.P();
+//         releasePage(address, arena->counter);
+//         mutex.V();
+//     }
+//     else
+//     {
+//         MemoryBlockListItem *itemPtr = (MemoryBlockListItem *)address;
+//         itemPtr->next = arenas[arena->type];
+//         itemPtr->previous = nullptr;
 
-        arenas[arena->type] = itemPtr;
-        ++(arena->counter);
+//         if (itemPtr->next)
+//         {
+//             itemPtr->next->previous = itemPtr;
+//         }
 
-        // 若整个Arena被归还，则清空分配给Arena的页
-        dword amount = (PAGE_SIZE - sizeof(Arena)) / arenaSize[arena->type];
-        // printf("---MemoryManager::release---: arena->counter: %d, amount: %d\n", arena->counter, amount);
+//         arenas[arena->type] = itemPtr;
+//         ++(arena->counter);
 
-        if (arena->counter == amount)
-        {
-            // 将属于Arena的内存块从链上删除
-            while (itemPtr)
-            {
-                if ((dword)arena != ((dword)itemPtr & 0xfffff000))
-                {
-                    itemPtr = itemPtr->next;
-                    continue;
-                }
+//         // 若整个Arena被归还，则清空分配给Arena的页
+//         dword amount = (PAGE_SIZE - sizeof(Arena)) / arenaSize[arena->type];
+//         // printf("---MemoryManager::release---: arena->counter: %d, amount: %d\n", arena->counter, amount);
 
-                if (itemPtr->previous == nullptr) // 链表中的第一个节点
-                {
-                    arenas[arena->type] = itemPtr->next;
-                    if (itemPtr->next)
-                    {
-                        itemPtr->next->previous = nullptr;
-                    }
-                }
-                else
-                {
-                    itemPtr->previous->next = itemPtr->next;
-                }
+//         if (arena->counter == amount)
+//         {
+//             // 将属于Arena的内存块从链上删除
+//             while (itemPtr)
+//             {
+//                 if ((dword)arena != ((dword)itemPtr & 0xfffff000))
+//                 {
+//                     itemPtr = itemPtr->next;
+//                     continue;
+//                 }
 
-                if (itemPtr->next)
-                {
-                    itemPtr->next->previous = itemPtr->previous;
-                }
+//                 if (itemPtr->previous == nullptr) // 链表中的第一个节点
+//                 {
+//                     arenas[arena->type] = itemPtr->next;
+//                     if (itemPtr->next)
+//                     {
+//                         itemPtr->next->previous = nullptr;
+//                     }
+//                 }
+//                 else
+//                 {
+//                     itemPtr->previous->next = itemPtr->next;
+//                 }
 
-                itemPtr = itemPtr->next;
-            }
+//                 if (itemPtr->next)
+//                 {
+//                     itemPtr->next->previous = itemPtr->previous;
+//                 }
 
-            mutex.P();
-            releasePage((dword)address, 1);
-            mutex.V();
-        }
-    }
-}
+//                 itemPtr = itemPtr->next;
+//             }
+
+//             mutex.P();
+//             releasePage((dword)address, 1);
+//             mutex.V();
+//         }
+//     }
+// }

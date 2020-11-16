@@ -26,4 +26,7 @@
 // 最大文件数量
 #define MAX_FILES BITS_PER_SECTOR
 /******************************************************************/
+
+#define PAGE_SIZE 4096
+
 #endif

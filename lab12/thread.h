@@ -20,7 +20,6 @@ void kernelThreadReturn();
 
 dword PID = 0;
 
-//extern "C" void *_running_thread();
 // 两个PCB指针
 extern "C" void _switch_thread_to(void *cur, void *next);
 
@@ -72,30 +71,33 @@ struct ThreadStack
 
 struct PCB
 {
-    dword *stack;
-    enum ThreadStatus status;
-    byte priority;
-    dword pid;
-    dword ticks;
-    dword ticksPassedBy;
-    ThreadListItem tagInGeneralList;
-    ThreadListItem tagInAllList;
-    dword *pageDir; // 页目录表地址，虚拟地址，位于内核空间
-    AddressPool userVaddr;
-    MemoryManager memoryManager;
+    dword *stack;                    // 栈指针，用于调度时保存esp
+    enum ThreadStatus status;        // 线程的状态
+    byte priority;                   // 线程优先级
+    dword pid;                       // 线程pid
+    dword ticks;                     // 线程时间片总时间
+    dword ticksPassedBy;             // 线程已执行时间
+    ThreadListItem tagInGeneralList; // 线程队列标识
+    ThreadListItem tagInAllList;     // 线程队列标识
 
+    dword *pageDir;                                   // 页目录表地址，虚拟地址，位于内核空间
+    AddressPool userVaddr;                            // 进程用户地址池
+    MemoryManager memoryManager;                      // 进程内存管理者
     dword fileDescriptors[MAX_FILE_OPEN_PER_PROCESS]; // 保存的是文件表中的下标
-    dword magic;
+    dword parentPid;                                  // 父进程pid
+    dword returnStatus;                               // 返回状态保存
+
+    dword magic; // 魔数
 };
 
 // 创建线程，返回pid
 dword createThread(PCB *thread, ThreadFunction func, void *arg, byte priority);
 
-ThreadList _all_threads, _ready_threads = ThreadList();
+ThreadList _all_threads, _ready_threads;
 
 void _schedule_thread();
-void _thread_switch_save(PCB *thread);
-void _thread_switch_recover(PCB *thread);
+//void _thread_switch_save(PCB *thread);
+//void _thread_switch_recover(PCB *thread);
 void _block_thread();
 void _wake_up_thread(PCB *thread);
 void *_running_thread();

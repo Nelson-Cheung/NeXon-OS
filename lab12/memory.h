@@ -39,6 +39,7 @@ void releaseVirtualPage(dword address);
 void releasePage(const dword virtualAddress, const dword count);
 // 归还从内核空间中分配的页
 void releaseKernelPage(const dword virtualAddress, const dword count);
+
 enum ArenaType
 {
     ARENA_16,

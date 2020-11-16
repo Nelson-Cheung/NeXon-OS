@@ -160,7 +160,7 @@ PCB *ProgramManager::buildThreadPCB(ThreadFunction func, void *arg, const char *
     thread->priority = priority;
     thread->ticks = priority;
     thread->ticksPassedBy = 0;
-    //thread->pageDir = nullptr;
+    thread->pageDir = nullptr;
 
     /*
     // 初始化文件描述符数组
@@ -199,6 +199,28 @@ PCB *ProgramManager::buildThreadPCB(ThreadFunction func, void *arg, const char *
 
     return thread;
 }
+
+// void ProgramManager::activatePageDir(PCB *pcb)
+// {
+//     dword paddr = 0x100000; // 内核页目录表物理地址
+
+//     if (pcb->pageDir)
+//     {
+//         paddr = vaddr2paddr((dword)pcb->pageDir);
+//     }
+
+//     sys_update_cr3(paddr);
+// }
+
+// void ProgramManager::activatePageTab(PCB *pcb)
+// {
+//     activatePageDir(pcb);
+
+//     if (pcb->pageDir)
+//     {
+//         tss.updateEsp0(pcb);
+//     }
+// }
 
 // dword ProgramManager::fork()
 // {

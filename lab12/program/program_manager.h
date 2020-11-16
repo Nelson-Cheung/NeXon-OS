@@ -50,12 +50,27 @@ private:
     // 按pid查找线程
     PCB *findProgramByPid(dword pid);
 
+    // 用户进程初始化，构建用户进程上下文环境
+    void startProcess(void *filename);
+
+    // 激活线程或进程页目录表
+    void activatePageDir(PCB *thread);
+
+    // 激活线程或进程页表
+    void activatePageTab(PCB *thread);
+
+    // 创建用户进程的页目录表
+    dword *createPageDir();
+
+    // 创建用户虚拟地址池
+    void createUserVaddrPool(PCB *pcb);
+    
+    // 创建用户进程
+    void executeProcess(void *filename, char *name);
+
     /**
      * fork相关函数
      */
-
-    // 复制当前进程到一个新进程中，返回进程的PCB
-    //PCB *copyProcess();
 
     /**
      * wait、exit相关函数
@@ -70,11 +85,13 @@ ProgramManager sysProgramManager;
 void sysExit(dword status)
 {
     printf("thread exit, pid: 0x%x\n", sysProgramManager.running()->pid);
-    while(1){}
+    while (1)
+    {
+    }
     //sysProgramManager.exit(status);
 }
 
-void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp) {
-
+void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp)
+{
 }
 #endif

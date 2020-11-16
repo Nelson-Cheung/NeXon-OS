@@ -10,7 +10,11 @@
 #include "program/program_manager.cpp"
 #include "program/threadlist.cpp"
 #include "program/addresspool.cpp"
+#include "program/sync.cpp"
+
 #include "syscall.cpp"
+
+Semaphore mutex;
 
 void init();
 void firstThread(void *arg);
@@ -65,15 +69,38 @@ void init()
     //sysMemoryManager.initialize();
 }
 
+dword counter;
+
 void secondThread(void *arg)
 {
     PCB *cur = sysProgramManager.running();
 
-    printf("thread, pid: 0x%x, pcb: 0x%x, name: %s\n", cur->pid, cur, cur->name);
+    mutex.P();
+    printf("1 counter: %d\n",counter);
+    counter += 1;
+    dword temp = 0xffffff;
+    while (temp)
+        --temp;
+    printf("1 counter: %d\n", counter);
+    mutex.V();
+}
+
+void thirdThread(void *arg)
+{
+    PCB *cur = sysProgramManager.running();
+
+    mutex.P();
+    printf("2 counter: %d\n", counter);
+    counter -= 1;
+    printf("2 counter: %d\n", counter);
+    mutex.V();
 }
 
 void firstThread(void *arg)
 {
+    counter = 10;
+
+    mutex.initialize(1);
     _enable_interrupt();
 
     PCB *cur = sysProgramManager.running();
@@ -81,13 +108,7 @@ void firstThread(void *arg)
     printf("thread, pid: 0x%x, pcb: 0x%x\n", cur->pid, cur);
 
     sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 2", 1);
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 3", 1);
-
-
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 2", 1);
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 3", 1);
+    sysProgramManager.executeThread(thirdThread, nullptr, "thread 2", 1);
 
     while (1)
     {

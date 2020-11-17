@@ -1,5 +1,5 @@
 #include "syscall.h"
-#include "memory.h"
+#include "memory/memory.h"
 #include "interrupt.h"
 #include "cstdio.h"
 #include "cstdlib.h"
@@ -11,10 +11,10 @@ void sysInitializeSysCall()
     syscallTable[SYSCALL_FIRST_SYS_CALL] = (void *)sysFirstSysCall;
     syscallTable[SYSCALL_WRITE] = (void *)sysWrite;
     syscallTable[SYSCALL_SCHEDULE_THREAD] = (void *)sysScheduleThread;
-    // syscallTable[SYSCALL_MALLOC] = (void *)sysMalloc;
-    // syscallTable[SYSCALL_FREE] = (void *)sysFree;
-    // syscallTable[SYSCALL_KERNEL_MALLOC] = (void *)sysKernelMalloc;
-    // syscallTable[SYSCALL_KERNEL_FREE] = (void *)sysKernelFree;
+    syscallTable[SYSCALL_MALLOC] = (void *)sysMalloc;
+    syscallTable[SYSCALL_FREE] = (void *)sysFree;
+    syscallTable[SYSCALL_KERNEL_MALLOC] = (void *)sysKernelMalloc;
+    syscallTable[SYSCALL_KERNEL_FREE] = (void *)sysKernelFree;
     // syscallTable[SYSCALL_FORK] = (void *)sysFork;
 }
 
@@ -104,94 +104,94 @@ void userScheduleThread()
     }
 }
 
-// void *sysMalloc()
-// {
-//     //printf("---sysMalloc---\n");
-//     dword size = (dword)sysGetEbx();
-//     PCB *pcb = (PCB *)_running_thread();
-//     if (pcb->pageDir)
-//     {
-//         return pcb->memoryManager.allocate(size);
-//     }
-//     else
-//     {
-//         return sysMemoryManager.allocate(size);
-//     }
-// }
-// void sysFree()
-// {
+void *sysMalloc()
+{
+    //printf("---sysMalloc---\n");
+    dword size = (dword)sysGetEbx();
+    PCB *pcb = sysProgramManager.running();
+    if (pcb->pageDir)
+    {
+        return pcb->memoryManager.allocate(size);
+    }
+    else
+    {
+        return sysMemoryManager.allocate(size);
+    }
+}
+void sysFree()
+{
 
-//     void *address = (void *)sysGetEbx();
-//     PCB *pcb = (PCB *)_running_thread();
-//     if (pcb->pageDir)
-//     {
-//         pcb->memoryManager.release(address);
-//     }
-//     else
-//     {
-//         sysMemoryManager.release(address);
-//     }
-// }
+    void *address = (void *)sysGetEbx();
+    PCB *pcb = (PCB *)_running_thread();
+    if (pcb->pageDir)
+    {
+        pcb->memoryManager.release(address);
+    }
+    else
+    {
+        sysMemoryManager.release(address);
+    }
+}
 
-// void *malloc(dword size)
-// {
-//     //mutexForMalloc.P();
-//     void *ans = syscall(SYSCALL_MALLOC, size);
-//     //mutexForMalloc.V();
-//     return ans;
-// }
+void *malloc(dword size)
+{
+    //mutexForMalloc.P();
+    void *ans = syscall(SYSCALL_MALLOC, size);
+    //mutexForMalloc.V();
+    return ans;
+}
 
-// void free(void *address)
-// {
-//     syscall(SYSCALL_FREE, (dword)address);
-// }
+void free(void *address)
+{
+    syscall(SYSCALL_FREE, (dword)address);
+}
 
-// void *sysKernelMalloc()
-// {
-//     dword size = (dword)sysGetEbx();
+void *sysKernelMalloc()
+{
+    dword size = (dword)sysGetEbx();
 
-//     bool status = _interrupt_status();
-//     _disable_interrupt();
+    bool status = _interrupt_status();
+    _disable_interrupt();
 
-//     PCB *pcb = (PCB *)_running_thread();
-//     dword *temp = pcb->pageDir;
-//     pcb->pageDir = nullptr;
+    PCB *pcb = (PCB *)_running_thread();
+    dword *temp = pcb->pageDir;
+    pcb->pageDir = nullptr;
 
-//     void *ans = sysMemoryManager.allocate(size);
+    void *ans = sysMemoryManager.allocate(size);
 
-//     pcb->pageDir = temp;
+    pcb->pageDir = temp;
 
-//     _set_interrupt(status);
-//     return ans;
-// }
+    _set_interrupt(status);
+    return ans;
+}
 
-// void *kernelMalloc(dword size)
-// {
-//     void *ans = syscall(SYSCALL_KERNEL_MALLOC, size);
-//     return ans;
-// }
+void *kernelMalloc(dword size)
+{
+    void *ans = syscall(SYSCALL_KERNEL_MALLOC, size);
+    return ans;
+}
 
-// void sysKernelFree()
-// {
-//     void *address = (void *)sysGetEbx();
+void sysKernelFree()
+{
+    void *address = (void *)sysGetEbx();
 
-//     bool status = _interrupt_status();
-//     _disable_interrupt();
+    bool status = _interrupt_status();
+    _disable_interrupt();
 
-//     PCB *pcb = (PCB *)_running_thread();
-//     dword *temp = pcb->pageDir;
-//     pcb->pageDir = nullptr;
+    PCB *pcb = (PCB *)_running_thread();
+    dword *temp = pcb->pageDir;
+    pcb->pageDir = nullptr;
 
-//     sysMemoryManager.release(address);
+    sysMemoryManager.release(address);
 
-//     pcb->pageDir = temp;
-//     _set_interrupt(status);
-// }
+    pcb->pageDir = temp;
+    _set_interrupt(status);
+}
 
-// void kernelFree(void *address)
-// {
-//     syscall(SYSCALL_KERNEL_FREE, (dword)address);
-// }
+void kernelFree(void *address)
+{
+    syscall(SYSCALL_KERNEL_FREE, (dword)address);
+}
 
 // dword sysFork() {
 //     dword ans =  sysProgramManager.fork();

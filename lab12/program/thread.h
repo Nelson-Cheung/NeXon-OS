@@ -15,9 +15,7 @@ enum ThreadStatus
     RUNNING,
     READY,
     BLOCKED,
-    WAITING,
-    HANGING,
-    DIED
+    DEAD
 };
 
 // 线程中断栈

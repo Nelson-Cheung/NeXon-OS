@@ -1,6 +1,6 @@
 #include "memory.h"
-#include "cstdio.h"
-#include "thread.h"
+#include "../cstdio.h"
+#include "../program/thread.h"
 
 void initMemoryPool(const dword totalMemory)
 {

@@ -141,6 +141,24 @@ void ThreadList::erase(int pos)
     }
 }
 
+void ThreadList::erase(ThreadListItem *itemPtr)
+{
+    ThreadListItem *temp = head.next;
+    
+    while (temp && temp != itemPtr)
+    {
+        temp = temp->next;
+    }
+
+    if (temp)
+    {
+        temp->previous->next = temp->next;
+        if (temp->next)
+        {
+            temp->next->previous = temp->previous;
+        }
+    }
+}
 ThreadListItem *ThreadList::at(int pos)
 {
     ThreadListItem *temp = head.next;

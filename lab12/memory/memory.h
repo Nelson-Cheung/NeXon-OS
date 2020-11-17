@@ -1,11 +1,12 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "type.h"
-#include "bitmap.h"
+#include "../type.h"
+#include "../bitmap.h"
 
 #include "../program/addresspool.h"
 #include "../program/program_manager.h"
+#include "../program/sync.h"
 
 #define BITMAP_START_ADDRESS 0xc0010000
 #define PAGE_SIZE 4096
@@ -76,6 +77,7 @@ private:
     static const dword minSize = 16;        // 内存块的最小大小
     dword arenaSize[MEM_BLOCK_TYPES];       // 每种类型对应的内存块大小
     MemoryBlockListItem *arenas[MEM_BLOCK_TYPES]; // 每种类型的arena内存块的指针
+    Semaphore mutex;
 
 public:
     MemoryManager();

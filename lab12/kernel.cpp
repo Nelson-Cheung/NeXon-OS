@@ -5,8 +5,10 @@
 #include "interrupt.h"
 #include "cstdio.h"
 #include "bitmap.cpp"
-#include "memory.cpp"
 
+#include "memory/memory.cpp"
+#include "program/thread.cpp"
+#include "program/process.cpp"
 #include "program/program_manager.cpp"
 #include "program/threadlist.cpp"
 #include "program/addresspool.cpp"
@@ -64,12 +66,23 @@ void init()
     sysProgramManager.initialize();
 
     // 初始化TSS
-    //tss.initialize();
+    tss.initialize();
+
     // 初始化内核堆内存分配
     //sysMemoryManager.initialize();
 }
 
 dword counter;
+
+void firstProcess(void *arg) {
+    
+    mutex.P();
+    printf("I am first process\n");
+    mutex.V();
+    while(1){
+
+    }
+}
 
 void secondThread(void *arg)
 {
@@ -83,6 +96,7 @@ void secondThread(void *arg)
         --temp;
     printf("1 counter: %d\n", counter);
     mutex.V();
+    while(1){}
 }
 
 void thirdThread(void *arg)
@@ -94,6 +108,7 @@ void thirdThread(void *arg)
     counter -= 1;
     printf("2 counter: %d\n", counter);
     mutex.V();
+    while(1) {}
 }
 
 void firstThread(void *arg)
@@ -103,13 +118,8 @@ void firstThread(void *arg)
     mutex.initialize(1);
     _enable_interrupt();
 
-    PCB *cur = sysProgramManager.running();
-
-    printf("thread, pid: 0x%x, pcb: 0x%x\n", cur->pid, cur);
-
-    sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
-    sysProgramManager.executeThread(thirdThread, nullptr, "thread 2", 1);
-
+    sysProgramManager.executeProcess((void *)secondThread, "second process", 1);
+    sysProgramManager.executeProcess((void *)thirdThread, "third process", 1);
     while (1)
     {
         //printf("YES\n");

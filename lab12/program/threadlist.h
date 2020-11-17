@@ -39,6 +39,7 @@ public:
     void insert(int pos, ThreadListItem *itemPtr);
     // 删除pos位置处的元素
     void erase(int pos);
+    void erase(ThreadListItem *itemPtr);
     // 返回指向pos位置处的元素的指针
     ThreadListItem *at(int pos);
     // 返回给定元素在ThreadList中的序号

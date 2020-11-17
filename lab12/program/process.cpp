@@ -106,7 +106,7 @@ dword ProgramManager::executeProcess(void *filename, const char *name, dword pri
     threadStack->eip = (dword)startProcess;
     threadStack->arg = filename;
 
-    //process->memoryManager.initialize();
+    process->memoryManager.initialize();
 
     bool interruptStatus = _interrupt_status();
     _disable_interrupt();

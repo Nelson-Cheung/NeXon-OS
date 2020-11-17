@@ -122,7 +122,7 @@ void sysFree()
 {
 
     void *address = (void *)sysGetEbx();
-    PCB *pcb = (PCB *)_running_thread();
+    PCB *pcb = sysProgramManager.running();
     if (pcb->pageDir)
     {
         pcb->memoryManager.release(address);
@@ -153,7 +153,7 @@ void *sysKernelMalloc()
     bool status = _interrupt_status();
     _disable_interrupt();
 
-    PCB *pcb = (PCB *)_running_thread();
+    PCB *pcb = sysProgramManager.running();
     dword *temp = pcb->pageDir;
     pcb->pageDir = nullptr;
 
@@ -178,7 +178,7 @@ void sysKernelFree()
     bool status = _interrupt_status();
     _disable_interrupt();
 
-    PCB *pcb = (PCB *)_running_thread();
+    PCB *pcb = sysProgramManager.running();
     dword *temp = pcb->pageDir;
     pcb->pageDir = nullptr;
 

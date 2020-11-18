@@ -15,7 +15,7 @@ void sysInitializeSysCall()
     syscallTable[SYSCALL_FREE] = (void *)sysFree;
     syscallTable[SYSCALL_KERNEL_MALLOC] = (void *)sysKernelMalloc;
     syscallTable[SYSCALL_KERNEL_FREE] = (void *)sysKernelFree;
-    // syscallTable[SYSCALL_FORK] = (void *)sysFork;
+    syscallTable[SYSCALL_FORK] = (void *)sysFork;
 }
 
 void *syscall(dword function, dword ebx, dword ecx,
@@ -193,11 +193,11 @@ void kernelFree(void *address)
     syscall(SYSCALL_KERNEL_FREE, (dword)address);
 }
 
-// dword sysFork() {
-//     dword ans =  sysProgramManager.fork();
-//     return ans;
-// }
+dword sysFork() {
+    dword ans =  sysProgramManager.fork();
+    return ans;
+}
 
-// dword fork() {
-//     return (dword)syscall(SYSCALL_FORK);
-// }
+dword fork() {
+    return (dword)syscall(SYSCALL_FORK);
+}

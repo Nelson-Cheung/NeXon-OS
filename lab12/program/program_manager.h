@@ -89,6 +89,8 @@ private:
      */
     // 唤醒父进程
     void backToParent();
+
+    friend void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp);
 };
 
 ProgramManager sysProgramManager;

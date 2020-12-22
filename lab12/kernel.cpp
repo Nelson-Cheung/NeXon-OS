@@ -17,6 +17,8 @@
 
 #include "syscall.cpp"
 
+#include "shell/shell.cpp"
+
 Semaphore mutex;
 
 void init();
@@ -60,46 +62,40 @@ void init()
 
 dword counter;
 
-void firstProcess(void *arg) {
-
+void firstProcess(void *arg)
+{
+    // while(1) {
+    //     dword temp = 0xffffff;
+    //     while(temp) --temp;
+    //     printf("1\n");
+    // }
+    // dword pid = sysProgramManager.running()->pid;
+    // if(pid != 1) {
+    //     printf("pid of first process is not 1!, is %d\n", pid);
+    //     _disable_interrupt();
+    //     while(1){}
+    // }
     dword pid = fork();
 
     if(pid) {
-        printf("I am father\n");
+        printf("pid: %d, I am father!\n", pid);
     } else {
-        printf("I am children\n");
+        printf("pid: %d, I am child!\n", pid);
     }
 
-    PCB *cur = sysProgramManager.running();
-    printf("process %d\n", cur->pid);
-    while(1) {}
+    while(1) {
+        
+    }
 }
 
-void secondThread(void *arg)
+void secondThread()
 {
-    PCB *cur = sysProgramManager.running();
-
-    mutex.P();
-    printf("1 counter: %d\n",counter);
-    counter += 1;
-    dword temp = 0xffffff;
-    while (temp)
-        --temp;
-    printf("1 counter: %d\n", counter);
-    mutex.V();
-    while(1){}
+    printf("process exit\n");
 }
 
 void thirdThread(void *arg)
 {
-    PCB *cur = sysProgramManager.running();
-
-    mutex.P();
-    printf("2 counter: %d\n", counter);
-    counter -= 1;
-    printf("2 counter: %d\n", counter);
-    mutex.V();
-    while(1) {}
+    printf("exit third thread\n");
 }
 
 void firstThread(void *arg)
@@ -109,11 +105,14 @@ void firstThread(void *arg)
     mutex.initialize(1);
     _enable_interrupt();
 
-    printf("%x %x\n", sys_fork_entry, fork);
-    sysProgramManager.executeProcess((void *)firstProcess, "second process", 1);
+    printf("%x %x %x %x\n", _switch_thread_to, firstProcess, TimeInterruptResponse, syscall);
+
+    sysProgramManager.executeProcess((void *)firstProcess, nullptr, 1);
 
     while (1)
     {
-        //printf("YES\n");
+        dword temp = 0xffffff;
+        while(temp) --temp;
+        printf("2\n");
     }
 }

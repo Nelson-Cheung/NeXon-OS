@@ -18,6 +18,7 @@ extern "C" void sysSetEsi(dword value);
 extern "C" void sysSetEdi(dword value);
 extern "C" void *sysStartSysCall();
 
+
 #define SYSCALL_AMOUNT 30
 void *syscallTable[SYSCALL_AMOUNT]; // 系统调用函数表
 
@@ -29,6 +30,8 @@ void *syscallTable[SYSCALL_AMOUNT]; // 系统调用函数表
 #define SYSCALL_KERNEL_MALLOC 5
 #define SYSCALL_KERNEL_FREE 6
 #define SYSCALL_FORK 7
+#define SYSCALL_EXIT 8
+#define SYSCALL_WAIT 9
 
 // 初始化系统调用表
 void sysInitializeSysCall();
@@ -42,14 +45,16 @@ void *syscall(dword function, dword ebx = 0, dword ecx = 0,
 /***************************************************************/
 
 // 内核空间的系统调用函数, 从0号开始依次排列下去
-void sysFirstSysCall();   // 0号系统调用，首个系统调用
-void sysWrite();          // 1号系统调用，打印特定字符串
-void sysScheduleThread(); // 2号系统调用，进程/线程切换
-void *sysMalloc();        // 3号系统调用，内存分配
-void sysFree();           // 4号系统调用，内存释放
-void *sysKernelMalloc();  // 5号系统调用，内核内存分配
-void sysKernelFree();     // 6号系统调用，内核内存释放
-dword sysFork();          // 7号系统调用，fork
+void sysFirstSysCall();            // 0号系统调用，首个系统调用
+void sysWrite();                   // 1号系统调用，打印特定字符串
+void sysScheduleThread();          // 2号系统调用，进程/线程切换
+void *sysMalloc();                 // 3号系统调用，内存分配
+void sysFree();                    // 4号系统调用，内存释放
+void *sysKernelMalloc();           // 5号系统调用，内核内存分配
+void sysKernelFree();              // 6号系统调用，内核内存释放
+dword sysFork();                   // 7号系统调用，fork
+extern void sysExit(dword status); // 8号系统调用，exit
+dword sysWait(dword *sstatus);     // 9号系统调用，wait
 /***************************************************************/
 
 // 用户空间的系统调用
@@ -61,5 +66,7 @@ void free(void *address);
 void *kernelMalloc(dword size);
 void kernelFree(void *address);
 dword fork();
+void exit(dword status);
+dword wait(dword *sstatus);
 /***************************************************************/
 #endif

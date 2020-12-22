@@ -13,11 +13,12 @@ extern "C" void _switch_thread_to(void *cur, void *next);
 extern "C" void sys_fork_entry(PCB *parent, PCB *child);
 extern "C" void sys_start_process(dword esp);
 extern "C" dword sys_update_cr3(dword address);
+extern "C" dword sys_interrupt_exit();
+
+extern void exit(dword status);
 
 // 向外提供的系统调用
 void sysExit(dword status);
-// 复制进程
-void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp);
 // 从文件名加载进程运行, 用户进程初始化，构建用户进程上下文环境
 void startProcess(void *filename);
 
@@ -38,7 +39,7 @@ public:
     void wakeUp(PCB *program);
     // 正在执行的线程/进程的pid
     PCB *running();
-    
+
     // 创建线程并运行，返回pid
     dword executeThread(ThreadFunction func, void *arg, const char *name, byte priority);
 
@@ -51,7 +52,8 @@ public:
     // 父进程等待其所有子进程完成后再执行，以实现进程同步
     dword wait(dword *wstatus);
 
-private:
+
+public:
     /**
      * 线程/进程的函数
      */
@@ -90,7 +92,7 @@ private:
     // 唤醒父进程
     void backToParent();
 
-    friend void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp);
+    bool copyProcess(PCB *parent, PCB *child);
 };
 
 ProgramManager sysProgramManager;

@@ -15,10 +15,11 @@ void startProcess(void *filename)
     interruptStack->ebp = 0;
     interruptStack->esp_dummy = 0;
     interruptStack->ebx = 0;
+    interruptStack->edx = 0;
     interruptStack->ecx = 0;
     interruptStack->eax = 0;
-    interruptStack->gs = 0;
 
+    interruptStack->gs = 0;
     interruptStack->fs = 0x3b;
     interruptStack->es = 0x3b;
     interruptStack->ss = 0x3b;
@@ -28,6 +29,9 @@ void startProcess(void *filename)
     interruptStack->cs = 0x33;                                // 用户模式平坦模式
     interruptStack->eflags = (3 << 12) | (1 << 9) | (1 << 1); // IOPL, IF, MBS
     interruptStack->esp = (dword)specifyPaddrForVaddr(AddressPoolType::USER, USER_STACK_VADDR) + PAGE_SIZE;
+    interruptStack->esp -= sizeof(dword);
+    // 设置返回process地址
+    ((dword *)(interruptStack->esp))[0] = (dword)exit;
 
     sys_start_process((dword)interruptStack);
 }
@@ -66,6 +70,8 @@ dword *ProgramManager::createPageDir()
         return nullptr;
     }
 
+    memset((byte *)vaddr, 0, PAGE_SIZE);
+
     // 复制内核目录项到虚拟地址的高1GB
     dword *src = (dword *)(0xfffff000 + 0x300 * 4);
     dword *dst = (dword *)((dword)vaddr + 0x300 * 4);
@@ -88,6 +94,7 @@ void ProgramManager::createUserVaddrPool(PCB *pcb)
     dword pagesCount = (length + PAGE_SIZE - 1) / PAGE_SIZE;
 
     void *start = allocatePages(AddressPoolType::KERNEL, pagesCount);
+    memset((byte *)start, 0, PAGE_SIZE);
     (pcb->userVaddr).setResources((byte *)start, sourcesCount);
     (pcb->userVaddr).setStartAddress(USER_VADDR_START);
 }
@@ -136,6 +143,7 @@ PCB *ProgramManager::findChildProcess(dword parentPid)
             ans = child;
             break;
         }
+        item = item->next;
     }
     _set_interrupt(status);
 
@@ -147,53 +155,62 @@ dword ProgramManager::fork()
     // 禁止内核线程调用
     PCB *parent = currentRunning;
     if (!parent->pageDir)
-        return false;
+        return -1;
 
     PCB *child = (PCB *)allocatePages(AddressPoolType::KERNEL, 1);
     if (!child)
-        return false;
+        return -1;
 
-    dword parentPid = parent->pid;
-    // sys_fork_entry的作用是冻结parent的栈内容和指针
-    sys_fork_entry(parent, child);
+    printf("parent: 0x%x, child: 0x%x\n", parent, child);
 
-
-    if (currentRunning->pid == parentPid)
-    {
+    if(copyProcess(parent, child)) {
+        bool interruptStatus = _interrupt_status();
+        _disable_interrupt();
+        sysProgramManager.allPrograms.push_front(&(child->tagInAllList));
+        sysProgramManager.readyPrograms.push_front(&(child->tagInGeneralList));
+        _set_interrupt(interruptStatus);
+       // printf("child pid: %d\n", child->pid);
         return child->pid;
-    }
-    else
-    {
-        return 0;
+    } else {
+        return -1;
     }
 }
 
-void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp)
+bool ProgramManager::copyProcess(PCB *parent, PCB *child)
 {
     // printf("%x %x %x %x\n", parent, child, entry, esp);
     // while(1){}
     /****************************************
      * 内核地址空间操作
      ****************************************/
-    memcpy(parent, child, PAGE_SIZE);
 
-    child->stack = (dword *)((dword)child + esp - (dword)parent);
-    child->stack = child->stack - 5;
+    // 复制父进程0级栈
+    memcpy(parent, child, PAGE_SIZE);
+    // 构造子进程0级栈
+    ThreadInterruptStack *interruptStack = (ThreadInterruptStack *)((dword)child + PAGE_SIZE - sizeof(ThreadInterruptStack));
+    interruptStack->eax = 0;
+
+    /*
+    printf("esp: %x\n", interruptStack->esp);
+    _disable_interrupt();
+    while(1) {
+
+    }
+    */
+    child->stack = (dword *)interruptStack - 5;
 
     // 和switch的过程对应
-    child->stack[0] = esi;
-    child->stack[1] = edi;
-    child->stack[2] = ebx;
-    child->stack[3] = ebp;
-    child->stack[4] = entry;
-    //printf("entry: 0x%x", entry);
-
-    child->stack = (dword *)(esp - 4 * 5);
+    child->stack[0] = 0;                         // esi
+    child->stack[1] = 0;                         // edi
+    child->stack[2] = 0;                         // ebx
+    child->stack[3] = 0;                         // ebp
+    child->stack[4] = (dword)sys_interrupt_exit; // return address
 
     child->status = ThreadStatus::READY;
     child->ticksPassedBy = 0;
 
     child->pid = sysProgramManager.allocatePid();
+    //printf("allocate pid: %d\n", child->pid);
     child->parentPid = parent->pid;
 
     // 复制进程页目录表，遵循页目录表定义规则。
@@ -202,7 +219,7 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
     if (!child->pageDir)
     {
         // 释放前面分配的内容
-        return;
+        return false;
     }
 
     memcpy(parent->pageDir, child->pageDir, 768 * sizeof(dword));
@@ -225,7 +242,7 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
     if (!buffer)
     {
         // 释放前面分配的内容
-        return;
+        return false;
     }
 
     for (dword i = 0; i < 768; ++i)
@@ -243,7 +260,7 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
             if (!paddr)
             {
                 // 释放前面分配的资源
-                return;
+                return false;
             }
 
             sys_update_cr3(childPageDirPaddr); // 下面根据的就是子进程的页目录表进行寻址
@@ -262,7 +279,7 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
                     if (!paddr)
                     {
                         // 释放前面分配的资源
-                        return;
+                        return false;
                     }
                     pageVaddr = (void *)((i << 22) + (j << 12));
                     memcpy(pageVaddr, buffer, PAGE_SIZE);
@@ -278,7 +295,7 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
 
     // 归还从内核分配的页表
     releaseKernelPage((dword)buffer, 1);
-
+    /*
     //将父进程PCB虚拟地址对应的物理页修改为子进程的物理页
     dword childPCBaddr = vaddr2paddr((dword)child);
     // 存放PCB地址的页表
@@ -300,12 +317,8 @@ void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dwo
     pageOfPCB[pte] = childPCBaddr | 0x7;
     dword pageOfPCBaddr = vaddr2paddr((dword)pageOfPCB);
     child->pageDir[pde] = pageOfPCBaddr | 0x7;
-
+*/
     // 加入进程列表
 
-    bool interruptStatus = _interrupt_status();
-    _disable_interrupt();
-    sysProgramManager.allPrograms.push_back(&(child->tagInAllList));
-    sysProgramManager.readyPrograms.push_back(&(child->tagInGeneralList));
-    _set_interrupt(interruptStatus);
+    return true;
 }

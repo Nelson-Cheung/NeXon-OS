@@ -59,7 +59,7 @@ void ThreadList::pop_back()
     if (temp)
     {
         temp->previous->next = nullptr;
-        // 还应该释放内存
+        temp->previous = temp->next = nullptr;
     }
 }
 
@@ -90,7 +90,7 @@ void ThreadList::pop_front()
             temp->next->previous = &head;
         }
         head.next = temp->next;
-        // 还应该释放内存
+        temp->previous = temp->next = nullptr;
     }
 }
 
@@ -149,6 +149,7 @@ void ThreadList::erase(ThreadListItem *itemPtr)
     {
         temp = temp->next;
     }
+
 
     if (temp)
     {

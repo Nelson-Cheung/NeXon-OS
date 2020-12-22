@@ -159,27 +159,38 @@ void releasePage(const dword virtualAddress, const dword count)
 
     for (int i = 0; i < count; ++i)
     {
-        if (pcb->pageDir)
-        {
-            userPool.release(vaddr2paddr(temp), 1);
-        }
-        else
-        {
-            kernelPool.release(vaddr2paddr(temp), 1);
-        }
-
-        pte = (dword *)temp;
-        *pte = 0;
+        releasePhysicalPage(vaddr2paddr(temp));
         temp += PAGE_SIZE;
     }
 
+    releaseVirtualPage(virtualAddress, count);
+}
+
+// 释放虚拟页
+void releaseVirtualPage(const dword vaddr, const dword count)
+{
+    PCB *pcb = sysProgramManager.running();
     if (pcb->pageDir)
     {
-        pcb->userVaddr.release(virtualAddress, count);
+        pcb->userVaddr.release(vaddr, count);
     }
     else
     {
-        kernelVrirtualPool.release(virtualAddress, count);
+        kernelVrirtualPool.release(vaddr, count);
+    }
+}
+// 释放物理页
+void releasePhysicalPage(const dword paddr)
+{
+    PCB *pcb = sysProgramManager.running();
+
+    if (pcb->pageDir)
+    {
+        userPool.release(paddr, 1);
+    }
+    else
+    {
+        kernelPool.release(paddr, 1);
     }
 }
 
@@ -194,9 +205,6 @@ void releaseKernelPage(const dword virtualAddress, const dword count)
     for (int i = 0; i < count; ++i)
     {
         kernelPool.release(vaddr2paddr(temp), 1);
-
-        pte = (dword *)temp;
-        *pte = 0;
         temp += PAGE_SIZE;
     }
 

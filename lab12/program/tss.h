@@ -18,31 +18,37 @@ extern "C" void sys_init_tss(dword selector);
 
 class Tss
 {
-private:
+public:
     dword backlink;
     dword *esp0;
     dword ss0;
     dword *esp1;
+
     dword ss1;
     dword *esp2;
     dword ss2;
     dword cr3;
+
     dword (*eip)(void);
     dword eflags;
     dword eax;
     dword ecx;
+
     dword edx;
     dword ebx;
     dword esp;
     dword ebp;
+
     dword esi;
     dword edi;
     dword es;
     dword cs;
+
     dword ss;
     dword ds;
     dword fs;
     dword gs;
+    
     dword ldt;
     dword trace;
     dword ioMap;

@@ -83,8 +83,10 @@ dword BitMap::allocate(const dword count)
 
 void BitMap::release(const dword index, const dword count)
 {
+    
     for (int i = 0; i < count; ++i)
     {
+        //printf("%d %d\n", index + i, length);
         set(index + i, false);
     }
 }

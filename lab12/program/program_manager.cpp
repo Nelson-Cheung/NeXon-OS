@@ -55,11 +55,13 @@ void ProgramManager::exit(dword status)
             if (!(page[j] & 0x1))
                 continue;
             // 释放物理页
-            releasePage(((i << 22) + (j << 12)), 1);
+            releasePhysicalPage(vaddr2paddr((i << 22) + (j << 12)));
         }
 
         // 释放页表占用的物理页
-        releasePage((dword)page, 1);
+
+        // 用户页表并未从虚拟地址池中分配地址
+        releasePhysicalPage(vaddr2paddr((dword)page));
     }
 
     // 释放页目录表
@@ -90,14 +92,11 @@ void ProgramManager::backToParent()
     if (!parent)
     {
         // 1号进程是init进程
-        parent = findProgramByPid(1);
-        wakeUp(parent);
+        currentRunning->parentPid = 1;
     }
-    else
-    {
-        currentRunning->status = ThreadStatus::DEAD;
-        schedule();
-    }
+
+    currentRunning->status = ThreadStatus::DEAD;
+    schedule();
 
     _set_interrupt(status);
 }
@@ -105,23 +104,54 @@ void ProgramManager::backToParent()
 dword ProgramManager::wait(dword *status)
 {
     PCB *child;
+    ThreadListItem *item;
     bool interrupt;
     dword temp;
+
+    // 先找结束的进程
+    interrupt = _interrupt_status();
+    _disable_interrupt();
+
+    item = allPrograms.head.next;
+    while (item)
+    {
+        child = threadListItem2PCB(item);
+        if (child->parentPid == currentRunning->pid && child->status == ThreadStatus::DEAD)
+        {
+
+            if (status)
+            {
+                *status = child->returnStatus;
+            }
+
+            dword pid = child->pid;
+            releaseKernelPage((dword)child, 1);
+            allPrograms.erase(&(child->tagInAllList));
+            _set_interrupt(interrupt);
+            printf("release child %d\n", child->pid);
+            return pid;
+        }
+        item = item->next;
+    }
+
+    _set_interrupt(interrupt);
 
     while (1)
     {
         interrupt = _interrupt_status();
         _disable_interrupt();
-
+        
         child = findChildProcess(currentRunning->pid);
         if (!child)
         {
-            _set_interrupt(status);
+
+            _set_interrupt(interrupt);
             return -1;
         }
 
         if (child->status == ThreadStatus::DEAD)
         {
+            printf("wait before releasing child %d\n", child->pid);
             if (status)
             {
                 *status = child->returnStatus;
@@ -132,12 +162,19 @@ dword ProgramManager::wait(dword *status)
             allPrograms.erase(&(child->tagInAllList));
             _set_interrupt(interrupt);
             return pid;
+        } else {
+            printf("wait for child %d\n", child->pid);
         }
 
         _set_interrupt(interrupt);
-        
+
         // 等待一段时间
+        
         temp = 0xfffff;
-        while(temp) --temp;
+        while (temp) {
+            //printf("%d\n", temp);
+            --temp;
+        }
+        
     }
 }

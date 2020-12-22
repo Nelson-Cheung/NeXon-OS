@@ -1,15 +1,16 @@
 #include "program_manager.h"
 #include "../interrupt.h"
 #include "../cstdlib.h"
+#include "tss.h"
 
 // 线程调度
 void ProgramManager::schedule()
 {
-    bool status = _interrupt_status();
     _disable_interrupt();
 
     // 只剩下一个线程/进程
-    if (allPrograms.find(&(currentRunning->tagInAllList)) == -1)
+
+    if (readyPrograms.size() == 0)
         return;
 
     if (currentRunning->status == ThreadStatus::RUNNING)
@@ -17,23 +18,24 @@ void ProgramManager::schedule()
         currentRunning->status = ThreadStatus::READY;
         currentRunning->ticks = currentRunning->priority;
         readyPrograms.push_back(&(currentRunning->tagInGeneralList));
-        //printf("schedule %x\n", currentRunning);
     }
     else
     {
     }
 
     ThreadListItem *item = readyPrograms.front();
-    PCB *next = (PCB *)(((dword)item) & 0xfffff000);
+    PCB *next = threadListItem2PCB(item);
     PCB *cur = currentRunning;
     next->status = ThreadStatus::RUNNING;
     currentRunning = next;
-
     readyPrograms.pop_front();
+
+//printf("0x%x 0x%x\n", cur, next);
 
     activatePageTab(next);
 
     _switch_thread_to(cur, next);
+
     _enable_interrupt();
 }
 
@@ -187,6 +189,7 @@ PCB *ProgramManager::buildThreadPCB(ThreadFunction func, void *arg, const char *
     return thread;
 }
 
-PCB *ProgramManager::threadListItem2PCB(ThreadListItem *item) {
+PCB *ProgramManager::threadListItem2PCB(ThreadListItem *item)
+{
     return (PCB *)(((dword)item) & 0xfffff000);
 }

@@ -43,8 +43,8 @@ global sysSetEdx
 global sysSetEsi
 global sysSetEdi
 global sysStartSysCall
-global sys_fork_entry
 global sys_update_cr3
+global sys_interrupt_exit
 
 extern TimeInterruptResponse
 extern KeyboardInterruptResponse
@@ -53,6 +53,7 @@ extern Kernel
 extern PrintTime
 extern syscallTable
 extern copyProcess
+
 _start:
     cli
     cmp byte[status], 1
@@ -812,10 +813,10 @@ _switch_thread_to:
     push edi
     push esi
 
-    mov eax, dword[esp+20]
+    mov eax, dword[esp + 4 * 5]
     mov [eax], esp
 
-    mov eax, dword[esp+24]
+    mov eax, dword[esp + 4 * 6]
     mov esp, [eax]
 
     pop esi
@@ -895,6 +896,16 @@ init_sys_call_interrupt: ; 0x80中断
 
 syscall_handler: ; 系统调用时的中断处理函数
     cli
+
+    sub esp, 4 ; 越过错误码
+    push ds
+    push es
+    push fs
+    push gs
+    pushad
+    sub esp, 4 ; 越过中断向量号
+
+    
     mov dword[temp], eax
     mov eax, DATA_SELECTOR
     mov ds, eax
@@ -907,6 +918,19 @@ syscall_handler: ; 系统调用时的中断处理函数
     sti    
 
     call dword[syscallTable+eax*4]
+
+    cli
+
+    mov [temp], eax ; 保存返回值
+    add esp, 4 ; 越过中断向量号
+    popad
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    add esp, 4 ; 越过错误码
+    mov eax, [temp]
+    sti
 
     iret
 
@@ -962,35 +986,16 @@ sysStartSysCall:
     pop ds
 
     ret
-sys_fork_entry:
-    push eax
-    push ebp
-    mov ebp, esp ;进程冻结点
 
-    push ebx
-    push edi
-    push esi
-    ; 参数从右向左依次入栈
-    push ebp
-
-    ; 子进程fork进入点
-    push FORK_ENTRY
-
-    ; child
-    mov eax, [ebp + 4 * 4]
-    push eax
-
-    ; parent
-    mov eax, [ebp + 4 * 3]
-    push eax
-
-    call copyProcess
-    add esp, 4 * 7
-FORK_ENTRY:
-    pop ebp
-    pop eax
-    ret
-
+sys_interrupt_exit:
+    add esp, 4 ; 越过中断向量号
+    popad
+    pop gs
+    pop fs
+    pop es
+    pop ds
+    add esp, 4 ; 越过错误码
+    iretd
 init_disk_interrupt:
     pushad
 
@@ -1020,6 +1025,7 @@ disk_interrupt:
 
     popad
     iret
+
 pgdt dw 0
      dd 0
 idt dw 0
@@ -1032,4 +1038,5 @@ input_buffer_end dd 0
 input_buffer_length equ 1024
 interrupt_status db 0
 temp dd 0
+
 _end:

@@ -16,6 +16,7 @@ extern "C" void _enable_interrupt();
 extern "C" void _disable_interrupt();
 extern "C" bool _interrupt_status();
 
+
 void _set_interrupt(bool status);
 
 dword max(dword x, dword y);
@@ -97,8 +98,11 @@ void TimeInterruptResponse()
 {
     PCB *cur = sysProgramManager.running();
     
+    ///printf("ticks: %d\n", cur->ticks);
+
     if (!cur->ticks)
     {
+       // printf("YES\n");
         userScheduleThread();
     }
     --cur->ticks;

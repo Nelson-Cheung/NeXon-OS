@@ -41,4 +41,9 @@ void releasePage(const dword virtualAddress, const dword count);
 // 归还从内核空间中分配的页
 void releaseKernelPage(const dword virtualAddress, const dword count);
 
+// 释放虚拟页
+void releaseVirtualPage(const dword vaddr, const dword count);
+// 释放物理页
+void releasePhysicalPage(const dword paddr);
+
 #endif

@@ -109,3 +109,6 @@ FORK_ENTRY:
     child->pageDir[pde] = pageOfPCBaddr | 0x7;
 ```
 
+
+
+父子进程共享代码段，栈段不共享。从3特权级到0特权级时，CPU会将TSS中的ESP0的值加载到ESP中，然后进行中断压栈，此时是执行冻结的时刻。

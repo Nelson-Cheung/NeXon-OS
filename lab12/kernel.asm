@@ -905,7 +905,13 @@ syscall_handler: ; 系统调用时的中断处理函数
     pushad
     sub esp, 4 ; 越过中断向量号
 
-    
+    ; 参数压栈
+    push edi
+    push esi
+    push edx
+    push ecx
+    push ebx
+
     mov dword[temp], eax
     mov eax, DATA_SELECTOR
     mov ds, eax
@@ -920,6 +926,7 @@ syscall_handler: ; 系统调用时的中断处理函数
     call dword[syscallTable+eax*4]
 
     cli
+    add esp, 4 * 5
 
     mov [temp], eax ; 保存返回值
     add esp, 4 ; 越过中断向量号

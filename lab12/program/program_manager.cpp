@@ -20,7 +20,7 @@ void sysExit(dword status)
     if (sysProgramManager.running()->pageDir)
     {
         // 交给父进程处理
-        sysProgramManager.exit(0);
+        sysProgramManager.exit(status);
     }
     else
     {
@@ -78,7 +78,7 @@ void ProgramManager::exit(dword status)
 
     // 向PCB中写入返回值，供父进程使用
     process->returnStatus = status;
-
+    printf("exit status: %d\n", status);
     // 父进程结束子进程
     backToParent();
 }

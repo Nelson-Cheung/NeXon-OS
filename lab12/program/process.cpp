@@ -29,9 +29,11 @@ void startProcess(void *filename)
     interruptStack->cs = 0x33;                                // 用户模式平坦模式
     interruptStack->eflags = (3 << 12) | (1 << 9) | (1 << 1); // IOPL, IF, MBS
     interruptStack->esp = (dword)specifyPaddrForVaddr(AddressPoolType::USER, USER_STACK_VADDR) + PAGE_SIZE;
-    interruptStack->esp -= sizeof(dword);
+    interruptStack->esp -= 3 * sizeof(dword);
     // 设置返回process地址
     ((dword *)(interruptStack->esp))[0] = (dword)exit;
+    // 1 被认为是返回地址
+    ((dword *)(interruptStack->esp))[2] = 1;
 
     sys_start_process((dword)interruptStack);
 }

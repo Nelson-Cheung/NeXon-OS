@@ -64,27 +64,13 @@ dword counter;
 
 void firstProcess(void *arg)
 {
-    // while(1) {
-    //     dword temp = 0xffffff;
-    //     while(temp) --temp;
-    //     printf("1\n");
-    // }
-    // dword pid = sysProgramManager.running()->pid;
-    // if(pid != 1) {
-    //     printf("pid of first process is not 1!, is %d\n", pid);
-    //     _disable_interrupt();
-    //     while(1){}
-    // }
     dword pid = fork();
 
     if(pid) {
         printf("pid: %d, I am father!\n", pid);
+        while(1) {}
     } else {
         printf("pid: %d, I am child!\n", pid);
-    }
-
-    while(1) {
-        
     }
 }
 
@@ -108,6 +94,7 @@ void firstThread(void *arg)
     printf("%x %x %x %x\n", _switch_thread_to, firstProcess, TimeInterruptResponse, syscall);
 
     sysProgramManager.executeProcess((void *)firstProcess, nullptr, 1);
+  //  sysProgramManager.executeThread((ThreadFunction)secondThread, nullptr, "", 1);
 
     while (1)
     {

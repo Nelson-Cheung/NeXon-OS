@@ -30,7 +30,7 @@ void ProgramManager::schedule()
     currentRunning = next;
     readyPrograms.pop_front();
 
-//printf("0x%x 0x%x\n", cur, next);
+    // printf("0x%x 0x%x\n", cur, next);
 
     activatePageTab(next);
 

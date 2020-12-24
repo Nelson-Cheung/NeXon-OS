@@ -297,30 +297,5 @@ bool ProgramManager::copyProcess(PCB *parent, PCB *child)
 
     // 归还从内核分配的页表
     releaseKernelPage((dword)buffer, 1);
-    /*
-    //将父进程PCB虚拟地址对应的物理页修改为子进程的物理页
-    dword childPCBaddr = vaddr2paddr((dword)child);
-    // 存放PCB地址的页表
-    dword *pageOfPCB = (dword *)allocatePages(AddressPoolType::KERNEL, 1);
-    if (!pageOfPCB)
-    {
-        // 释放前面分配的资源
-        return;
-    }
-
-    dword pde, pte;
-    pde = ((dword)parent & 0xffc00000) >> 22;
-    pte = ((dword)parent & 0x003ff000) >> 12;
-
-    //printf("%d %d\n", pde, pte);
-
-    dword *parentPageOfPCB = (dword *)(0xffc00000 + (pde << 12));
-    memcpy(parentPageOfPCB, pageOfPCB, PAGE_SIZE);
-    pageOfPCB[pte] = childPCBaddr | 0x7;
-    dword pageOfPCBaddr = vaddr2paddr((dword)pageOfPCB);
-    child->pageDir[pde] = pageOfPCBaddr | 0x7;
-*/
-    // 加入进程列表
-
     return true;
 }

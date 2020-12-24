@@ -66,11 +66,16 @@ void firstProcess(void *arg)
 {
     dword pid = fork();
 
-    if(pid) {
-        printf("pid: %d, I am father!\n", pid);
-        while(1) {}
-    } else {
-        printf("pid: %d, I am child!\n", pid);
+    if (pid)
+    {
+        while ((pid = wait(nullptr)) != -1)
+        {
+            printf("revoke child process: %d\n", pid);
+        }
+    }
+    else
+    {
+        printf("pid: %d, I am child!\n", sysProgramManager.currentRunning->parentPid);
     }
 }
 
@@ -94,12 +99,13 @@ void firstThread(void *arg)
     printf("%x %x %x %x\n", _switch_thread_to, firstProcess, TimeInterruptResponse, syscall);
 
     sysProgramManager.executeProcess((void *)firstProcess, nullptr, 1);
-  //  sysProgramManager.executeThread((ThreadFunction)secondThread, nullptr, "", 1);
+    //  sysProgramManager.executeThread((ThreadFunction)secondThread, nullptr, "", 1);
 
     while (1)
     {
         dword temp = 0xffffff;
-        while(temp) --temp;
+        while (temp)
+            --temp;
         printf("2\n");
     }
 }

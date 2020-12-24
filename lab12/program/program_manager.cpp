@@ -78,7 +78,7 @@ void ProgramManager::exit(dword status)
 
     // 向PCB中写入返回值，供父进程使用
     process->returnStatus = status;
-    printf("exit status: %d\n", status);
+    //printf("exit status: %d\n", status);
     // 父进程结束子进程
     backToParent();
 }
@@ -107,40 +107,63 @@ dword ProgramManager::wait(dword *status)
     ThreadListItem *item;
     bool interrupt;
     dword temp;
+    bool flag;
 
-    // 先找结束的进程
-    interrupt = _interrupt_status();
-    _disable_interrupt();
-
-    item = allPrograms.head.next;
-    while (item)
+    while (true)
     {
-        child = threadListItem2PCB(item);
-        if (child->parentPid == currentRunning->pid && child->status == ThreadStatus::DEAD)
+        interrupt = _interrupt_status();
+        _disable_interrupt();
+
+        item = allPrograms.head.next;
+        flag = true;
+
+        while (item)
         {
-
-            if (status)
+            child = threadListItem2PCB(item);
+            if (child->parentPid == currentRunning->pid)
             {
-                *status = child->returnStatus;
-            }
+                flag = false;
+                if (child->status == ThreadStatus::DEAD)
+                {
+                    if (status)
+                    {
+                        *status = child->returnStatus;
+                    }
 
-            dword pid = child->pid;
-            releaseKernelPage((dword)child, 1);
-            allPrograms.erase(&(child->tagInAllList));
-            _set_interrupt(interrupt);
-            printf("release child %d\n", child->pid);
-            return pid;
+                    dword pid = child->pid;
+                    releaseKernelPage((dword)child, 1); // 释放子进程PCB
+                    allPrograms.erase(&(child->tagInAllList));
+                    _set_interrupt(interrupt); // 返回之前需要回退中断状态
+                    printf("release child %d\n", child->pid);
+                    return pid;
+                }
+            }
+            item = item->next;
         }
-        item = item->next;
+
+        _set_interrupt(interrupt);
+
+        if (flag)
+        {
+            return -1;
+        }
+
+        printf("wait for child process\n");
+        // 阻塞一段时间
+        temp = 0xfffff;
+        while (temp)
+        {
+            //printf("%d\n", temp);
+            --temp;
+        }
     }
 
-    _set_interrupt(interrupt);
-
+    // 阻塞等待未完成进程
     while (1)
     {
         interrupt = _interrupt_status();
         _disable_interrupt();
-        
+
         child = findChildProcess(currentRunning->pid);
         if (!child)
         {
@@ -162,19 +185,14 @@ dword ProgramManager::wait(dword *status)
             allPrograms.erase(&(child->tagInAllList));
             _set_interrupt(interrupt);
             return pid;
-        } else {
+        }
+        else
+        {
             printf("wait for child %d\n", child->pid);
         }
 
         _set_interrupt(interrupt);
 
         // 等待一段时间
-        
-        temp = 0xfffff;
-        while (temp) {
-            //printf("%d\n", temp);
-            --temp;
-        }
-        
     }
 }

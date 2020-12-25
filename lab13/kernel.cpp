@@ -20,6 +20,7 @@
 #include "shell/shell.cpp"
 
 #include "ext2/fs.cpp"
+#include "disk/disk_bitmap.cpp"
 
 Semaphore mutex;
 
@@ -101,16 +102,14 @@ void firstThread(void *arg)
     mutex.initialize(1);
     _enable_interrupt();
 
-   // printf("%x %x %x %x\n", _switch_thread_to, firstProcess, TimeInterruptResponse, syscall);
+    bool ans;
+    DirectoryEntry rootDir, current;
+    rootDir.inode = 0;
+    rootDir.type = DIRECTORY_FILE;
+    rootDir.setName("/");
 
-    //sysProgramManager.executeProcess((void *)firstProcess, nullptr, 1);
-    //  sysProgramManager.executeThread((ThreadFunction)secondThread, nullptr, "", 1);
+    byte buf[SECTOR_SIZE + 1];
+    memset(buf, 0, SECTOR_SIZE + 1);
 
-    while (1)
-    {
-        dword temp = 0xffffff;
-        while (temp)
-            --temp;
-        printf("2\n");
-    }
+    printFileSystem(0, rootDir);
 }

@@ -8,19 +8,24 @@
 
 #define INODE_BLOCK_DIRECT 8                            // 直接数据块数目，此后，一级，二级等多级根区块均为1个
 #define INODE_BLOCK_FIRST (SECTOR_SIZE / sizeof(dword)) // 一级数据块的数目
+#define FILE_INDEX_BLOCKS 9
 
 // inode的作用是描述文件的属性，如文件大小，文件标志和文件的数据块索引
 struct Inode
 {
-    dword size;        // 文件大小
-    dword blockAmount; // 文件数据块的数目
-    dword blocks[9];   // 文件数据块，保存的是文件数据块对应的逻辑扇区号，0~7是直接数据块，8是一级数据块
-    dword id;          // inode在inode table中的下标
+    dword size;                      // 文件大小
+    dword blockAmount;               // 文件数据块的数目
+    dword blocks[FILE_INDEX_BLOCKS]; // 文件数据块，保存的是文件数据块对应的逻辑扇区号，0~7是直接数据块，8是一级数据块
+    dword id;                        // inode在inode table中的下标
 
     // 涉及指针的一定要有constructor，operator=
     Inode()
     {
         id = -1;
+        for (int i = 0; i < FILE_INDEX_BLOCKS; ++i)
+        {
+            blocks[i] = -1;
+        }
     }
 
     Inode(const Inode &inode)
@@ -108,7 +113,7 @@ struct Inode
             // 处理直接数据块
             Disk::read(blocks[index], buf);
         }
-        else if (index < INODE_BLOCK_FIRST)
+        else if (index - INODE_BLOCK_DIRECT < INODE_BLOCK_FIRST)
         {
             // 处理一级数据块
             dword *temp = (dword *)kernelMalloc(SECTOR_SIZE);
@@ -116,8 +121,10 @@ struct Inode
             {
                 PANIC::halt(PANIC_MEMORY_EXHAUSTED, "Inode::readBlock", "kernelMalloc");
             }
+            
             Disk::read(blocks[INODE_BLOCK_DIRECT + 0], temp);
             dword offset = index - INODE_BLOCK_DIRECT;
+            
             Disk::read(temp[offset], buf);
             kernelFree(temp);
         }
@@ -208,6 +215,7 @@ struct Inode
             }
             Disk::read(blocks[INODE_BLOCK_DIRECT + 0], temp);
             dword offset = index - INODE_BLOCK_DIRECT;
+            //printf("%d %d %d\n", blocks[INODE_BLOCK_DIRECT + 0], offset, temp[offset]);
             Disk::write(temp[offset], buf);
             kernelFree(temp);
         }
@@ -224,7 +232,7 @@ struct Inode
         {
             blocks[blockAmount] = block;
         }
-        else if (blockAmount < INODE_BLOCK_FIRST)
+        else if (blockAmount - INODE_BLOCK_DIRECT < INODE_BLOCK_FIRST)
         {
             dword offset = blockAmount - INODE_BLOCK_DIRECT;
             dword *temp = (dword *)kernelMalloc(SECTOR_SIZE);
@@ -234,6 +242,7 @@ struct Inode
             }
             Disk::read(blocks[INODE_BLOCK_DIRECT + 0], temp);
             temp[offset] = block;
+            //printf("%d %d %d\n", blocks[INODE_BLOCK_DIRECT + 0], offset, temp[offset]);
             Disk::write(blocks[INODE_BLOCK_DIRECT + 0], temp);
             kernelFree(temp);
         }
@@ -252,7 +261,7 @@ struct Inode
         {
             lastBlock = blocks[blockAmount - 1];
         }
-        else if (blockAmount < INODE_BLOCK_FIRST)
+        else if (blockAmount - INODE_BLOCK_DIRECT < INODE_BLOCK_FIRST)
         {
             dword offset = blockAmount - INODE_BLOCK_DIRECT;
             dword *temp = (dword *)kernelMalloc(SECTOR_SIZE);

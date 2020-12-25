@@ -137,10 +137,10 @@ void FileSystem::init()
     Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(Inode));
 }
 
-dword FileSystem::openFile(const char *path, bool rw, dword type)
+dword FileSystem::openFile(const char *path, dword mode, dword type)
 {
     // 目录文件禁止外界写
-    if (rw == false && type == DIRECTORY_FILE)
+    if ((!mode) || ((mode & WRITE) && type == DIRECTORY_FILE))
         return false;
 
     // 查找是否有对应的文件
@@ -160,19 +160,16 @@ dword FileSystem::openFile(const char *path, bool rw, dword type)
     }
 
     // 存在于打开文件表中
-
-    /**********************************/
-    // 应考虑多线程的情况
-    /*********************************/
     if (index < MAX_SYSTEM_OPENED_FILES)
     {
-        // 以读方式打开
-        if (rw)
+        // 以非写方式打开
+        if (mode & WRITE)
         {
-            // 已打开文件是以读方式打开的
-            if (openedFiles[index].rw)
+            // 以写方式打开，只能有一个写者
+            if (!openedFiles[index].count)
             {
                 ++openedFiles[index].count;
+                openedFiles[index].mode = mode;
                 return index;
             }
             else
@@ -182,10 +179,11 @@ dword FileSystem::openFile(const char *path, bool rw, dword type)
         }
         else
         {
-            // 以写方式打开，只能有一个写者
-            if (!openedFiles[index].count)
+            // 已打开文件是以读方式打开的
+            if (!(openedFiles[index].count && (openedFiles[index].mode & WRITE)))
             {
                 ++openedFiles[index].count;
+                openedFiles[index].mode = mode;
                 return index;
             }
             else
@@ -206,7 +204,7 @@ dword FileSystem::openFile(const char *path, bool rw, dword type)
     {
         openedFiles[index].inode = inode;
         openedFiles[index].count = 1;
-        openedFiles[index].rw = rw;
+        openedFiles[index].mode = mode;
         openedFiles[index].type = type;
         return index;
     }
@@ -223,7 +221,7 @@ dword FileSystem::openFile(const char *path, bool rw, dword type)
     {
         openedFiles[index].inode = inode;
         openedFiles[index].count = 1;
-        openedFiles[index].rw = rw;
+        openedFiles[index].mode = mode;
         openedFiles[index].type = type;
         return index;
     }
@@ -261,7 +259,8 @@ dword FileSystem::createFile(const char *path, dword type)
 dword FileSystem::readFileBlock(dword handle, dword block, void *buf)
 {
     if (handle >= MAX_SYSTEM_OPENED_FILES ||
-        block >= openedFiles[handle].inode.blockAmount)
+        block >= openedFiles[handle].inode.blockAmount ||
+        !(openedFiles[handle].mode & READ))
         return false;
 
     openedFiles[handle].inode.readBlock(block, buf);
@@ -271,7 +270,9 @@ dword FileSystem::readFileBlock(dword handle, dword block, void *buf)
 dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
 {
     if (handle >= MAX_SYSTEM_OPENED_FILES ||
-        block >= openedFiles[handle].inode.blockAmount)
+        block >= openedFiles[handle].inode.blockAmount ||
+        !(openedFiles[handle].mode & WRITE) ||
+        strlib::len((char *)buf) > SECTOR_SIZE)
         return false;
 
     dword blockAmount = openedFiles[handle].inode.blockAmount;
@@ -279,14 +280,16 @@ dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
 
     // 写最后一个文件块(不一定是最后一个数据块)时文件大小会发生变化
 
-    if (block == size/ SECTOR_SIZE)
+    if (block == size / SECTOR_SIZE)
     {
         openedFiles[handle].inode.size = block * SECTOR_SIZE + strlib::len((char *)buf);
         // 同步化到磁盘
+        
         Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
                          &(openedFiles[handle].inode), sizeof(Inode));
+                         
     }
-    else if (strlib::len((char *)buf) != SECTOR_SIZE) 
+    else if (strlib::len((char *)buf) != SECTOR_SIZE)
     {
         // 写中间的文件块不允许出现'\0'
         return false;
@@ -300,10 +303,26 @@ dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
 dword FileSystem::appendFileBlock(dword handle)
 {
     dword block = allocateDataBlock();
+
     if (block == -1 || handle >= MAX_SYSTEM_OPENED_FILES)
         return false;
 
+    // 一级索引块后需要分配数据块
+    if(openedFiles[handle].inode.blockAmount >= INODE_BLOCK_DIRECT &&
+        openedFiles[handle].inode.blockAmount - INODE_BLOCK_DIRECT < INODE_BLOCK_FIRST)
+    {
+        openedFiles[handle].inode.blocks[INODE_BLOCK_DIRECT + 0] = allocateDataBlock();
+        if (openedFiles[handle].inode.blocks[INODE_BLOCK_DIRECT + 0] == -1)
+        {
+            return false;
+        }
+        
+    }
+
     openedFiles[handle].inode.blockPushBack(block);
+    Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
+                     &(openedFiles[handle].inode), sizeof(Inode));
+                     
 }
 
 dword FileSystem::popFileBlock(dword handle)

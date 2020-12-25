@@ -28,7 +28,20 @@ void sysExit(dword status)
         sysProgramManager.allPrograms.erase(&(thread->tagInAllList));
         releaseKernelPage((dword)thread, 1);
         thread->status = ThreadStatus::DEAD;
-        sysProgramManager.schedule();
+
+        // 处理0号线程退出的情况
+        if (thread->pid)
+        {
+            sysProgramManager.schedule();
+        }
+        else
+        {
+            _disable_interrupt();
+            printf("halt\n");
+            while (1)
+            {
+            }
+        }
     }
 }
 

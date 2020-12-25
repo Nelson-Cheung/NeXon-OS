@@ -12,17 +12,20 @@
 #include "../disk/disk_bitmap.h"
 #include "../configure/os_configure.h"
 
+#define READ 0x1 
+#define WRITE 0x2
+
 struct OpenedFile
 {
     Inode inode; // 文件对应的inode
     dword count; // 文件被多少个线程/进程打开，未打开文件count=0
-    bool rw;     // 文件属于写/读，true=读，false=写
+    dword mode; // 文件打开模式
     dword type;  // 文件类型
 };
 
 class FileSystem
 {
-private:
+public:
     SuperBlock sb;                                   // 超级块
     OpenedFile openedFiles[MAX_SYSTEM_OPENED_FILES]; // 打开文件表, 0, 1, 2提前占用
     DiskBitMap blockBitmap;                          // 空闲块位图，用于管理数据区
@@ -30,7 +33,7 @@ private:
 
 public:
     /**********************************/
-    // 未考虑多线程的情况
+    // 未考虑多线程的情况，多线程应该在系统调用中同步
     /*********************************/
     FileSystem();
 
@@ -38,7 +41,7 @@ public:
     void init(); // pass
 
     // 按路径path打开文件，创建一个OpenedFile对象放入openedFiles中，并将其下标作为文件句柄返回。未找到或打开文件表已满则返回-1
-    dword openFile(const char *path, bool rw, dword type); // pass
+    dword openFile(const char *path, dword mode, dword type); // pass
 
     // 关闭文件
     dword closeFile(dword handle); // pass

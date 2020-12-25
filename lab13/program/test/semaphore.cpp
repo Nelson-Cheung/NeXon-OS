@@ -5,21 +5,14 @@
 #include "interrupt.h"
 #include "cstdio.h"
 #include "bitmap.cpp"
+#include "memory.cpp"
 
-#include "memory/memory.cpp"
-#include "program/memory_manager.cpp"
-#include "program/thread.cpp"
-#include "program/process.cpp"
 #include "program/program_manager.cpp"
 #include "program/threadlist.cpp"
 #include "program/addresspool.cpp"
 #include "program/sync.cpp"
 
 #include "syscall.cpp"
-
-#include "shell/shell.cpp"
-
-#include "ext2/fs.cpp"
 
 Semaphore mutex;
 
@@ -42,6 +35,21 @@ void Kernel()
     sysProgramManager.readyPrograms.pop_front();
 
     _switch_thread_to((void *)0x9f000, thread);
+
+    /*
+    dword pid = createThread(&firstThread, nullptr, 2);
+
+    PCB *next = elem2entry(PCB, tagInGeneralList, _ready_threads.front());
+    currentRunningThread = next;
+
+    currentRunningThread = next;
+    next->status = ThreadStatus::RUNNING;
+    _ready_threads.pop_front();
+    _switch_thread_to((void *)0x9f000, next);
+    */
+
+    while (1)
+        ;
 }
 
 void init()
@@ -56,42 +64,36 @@ void init()
     sysProgramManager.initialize();
 
     // 初始化TSS
-    tss.initialize();
-
+    //tss.initialize();
     // 初始化内核堆内存分配
-    sysMemoryManager.initialize();
-
-    // 初始化文件系统
-    sysFileSystem.init();
+    //sysMemoryManager.initialize();
 }
 
 dword counter;
 
-void firstProcess(void *arg)
+void secondThread(void *arg)
 {
-    dword pid = fork();
+    PCB *cur = sysProgramManager.running();
 
-    if (pid)
-    {
-        while ((pid = wait(nullptr)) != -1)
-        {
-            printf("revoke child process: %d\n", pid);
-        }
-    }
-    else
-    {
-        printf("pid: %d, I am child!\n", sysProgramManager.currentRunning->parentPid);
-    }
-}
-
-void secondThread()
-{
-    printf("process exit\n");
+    mutex.P();
+    printf("1 counter: %d\n",counter);
+    counter += 1;
+    dword temp = 0xffffff;
+    while (temp)
+        --temp;
+    printf("1 counter: %d\n", counter);
+    mutex.V();
 }
 
 void thirdThread(void *arg)
 {
-    printf("exit third thread\n");
+    PCB *cur = sysProgramManager.running();
+
+    mutex.P();
+    printf("2 counter: %d\n", counter);
+    counter -= 1;
+    printf("2 counter: %d\n", counter);
+    mutex.V();
 }
 
 void firstThread(void *arg)
@@ -101,16 +103,15 @@ void firstThread(void *arg)
     mutex.initialize(1);
     _enable_interrupt();
 
-   // printf("%x %x %x %x\n", _switch_thread_to, firstProcess, TimeInterruptResponse, syscall);
+    PCB *cur = sysProgramManager.running();
 
-    //sysProgramManager.executeProcess((void *)firstProcess, nullptr, 1);
-    //  sysProgramManager.executeThread((ThreadFunction)secondThread, nullptr, "", 1);
+    printf("thread, pid: 0x%x, pcb: 0x%x\n", cur->pid, cur);
+
+    sysProgramManager.executeThread(secondThread, nullptr, "thread 1", 1);
+    sysProgramManager.executeThread(thirdThread, nullptr, "thread 2", 1);
 
     while (1)
     {
-        dword temp = 0xffffff;
-        while (temp)
-            --temp;
-        printf("2\n");
+        //printf("YES\n");
     }
 }

@@ -147,7 +147,7 @@ dword ProgramManager::wait(dword *status)
                     releaseKernelPage((dword)child, 1); // 释放子进程PCB
                     allPrograms.erase(&(child->tagInAllList));
                     _set_interrupt(interrupt); // 返回之前需要回退中断状态
-                    printf("release child %d\n", child->pid);
+                    //printf("release child %d\n", child->pid);
                     return pid;
                 }
             }
@@ -161,7 +161,7 @@ dword ProgramManager::wait(dword *status)
             return -1;
         }
 
-        printf("wait for child process\n");
+        //printf("wait for child process\n");
         // 阻塞一段时间
         temp = 0xfffff;
         while (temp)

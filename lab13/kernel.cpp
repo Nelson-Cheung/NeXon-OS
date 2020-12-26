@@ -22,6 +22,8 @@
 #include "ext2/fs.cpp"
 #include "disk/disk_bitmap.cpp"
 
+#include "devices/keyboard.h"
+
 Semaphore mutex;
 
 void init();
@@ -74,25 +76,15 @@ void firstProcess(void *arg)
 
     if (pid)
     {
-        while ((pid = wait(nullptr)) != -1)
-        {
-            printf("revoke child process: %d\n", pid);
+        while(1) {
+            wait(nullptr);
         }
     }
     else
     {
-        printf("pid: %d, I am child!\n", sysProgramManager.currentRunning->parentPid);
+        Shell shell;
+        shell.run();
     }
-}
-
-void secondThread()
-{
-    printf("process exit\n");
-}
-
-void thirdThread(void *arg)
-{
-    printf("exit third thread\n");
 }
 
 void firstThread(void *arg)
@@ -102,6 +94,7 @@ void firstThread(void *arg)
     mutex.initialize(1);
     _enable_interrupt();
 
+    /*
     bool ans;
     DirectoryEntry rootDir, current;
     rootDir.inode = 0;
@@ -112,4 +105,9 @@ void firstThread(void *arg)
     memset(buf, 0, SECTOR_SIZE + 1);
 
     printFileSystem(0, rootDir);
+    */
+   // sysProgramManager.executeProcess((void *)firstProcess, "", 1);
+    while(1) {
+
+    }
 }

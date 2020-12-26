@@ -6,6 +6,8 @@
 #include "string.h"
 #include "program/thread.h"
 #include "program/program_manager.h"
+#include "devices/keyboard.h"
+
 
 extern "C" void KeyboardInterruptResponse(dword param);
 extern "C" void TimeInterruptResponse();

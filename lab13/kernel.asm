@@ -53,6 +53,7 @@ extern Kernel
 extern PrintTime
 extern syscallTable
 extern copyProcess
+extern keyboardInterruptHandler
 
 _start:
     cli
@@ -547,8 +548,10 @@ init_keyboard_interrupt:
     pushad
 
     mov eax, keyboard_interrput
+    and eax, 0xffff ; 取低16位
     mov ebx, CODE_SELECTOR
     shl ebx, 16
+    
     or eax, ebx
     mov [IDT_START_ADDRESS+0x21*8], eax
 
@@ -560,31 +563,15 @@ init_keyboard_interrupt:
     popad
     ret
 keyboard_interrput:
-    push eax
-    push esi
-
-    in al, 0x60
-    mov esi, input_buffer
-    add esi, dword[input_buffer_end]
-
-    mov byte[esi], al
-
-    push eax
-    call KeyboardInterruptResponse
-    pop eax
-
-    inc dword[input_buffer_end]
-    cmp dword[input_buffer_end], input_buffer_length
-    jne keyboard_interrput_return
-    mov dword[input_buffer_end], 0
+    pushad
+    call keyboardInterruptHandler
 keyboard_interrput_return:
     ; 发送EOI消息
     mov al, 0x20
     out 0x20, al
     out 0xa0, al
 
-    pop esi
-    pop eax
+    popad
     iret
 ; 时钟中断
 init_time_interrupt:

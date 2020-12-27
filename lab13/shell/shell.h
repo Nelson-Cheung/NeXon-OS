@@ -3,6 +3,9 @@
 
 class Shell
 {
+private:
+    byte keymap[47][2];
+    
 public:
     Shell();
     void initialize();

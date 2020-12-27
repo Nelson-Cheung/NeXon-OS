@@ -563,6 +563,7 @@ init_keyboard_interrupt:
     popad
     ret
 keyboard_interrput:
+    cli
     pushad
     call keyboardInterruptHandler
 keyboard_interrput_return:
@@ -572,6 +573,7 @@ keyboard_interrput_return:
     out 0xa0, al
 
     popad
+    sti
     iret
 ; 时钟中断
 init_time_interrupt:

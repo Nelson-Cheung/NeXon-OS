@@ -14,6 +14,7 @@
 #include "program/threadlist.cpp"
 #include "program/addresspool.cpp"
 #include "program/sync.cpp"
+#include "program/lock.h"
 
 #include "syscall.cpp"
 
@@ -22,7 +23,7 @@
 #include "ext2/fs.cpp"
 #include "disk/disk_bitmap.cpp"
 
-#include "devices/keyboard.h"
+#include "devices/keyboard.cpp"
 
 Semaphore mutex;
 
@@ -66,6 +67,9 @@ void init()
 
     // 初始化文件系统
     sysFileSystem.init();
+
+    // 初始化键盘驱动
+    sysKeyboard.initialize();
 }
 
 dword counter;
@@ -76,7 +80,8 @@ void firstProcess(void *arg)
 
     if (pid)
     {
-        while(1) {
+        while (1)
+        {
             wait(nullptr);
         }
     }
@@ -87,6 +92,35 @@ void firstProcess(void *arg)
     }
 }
 
+void secondThread(void *arg)
+{
+    byte code;
+    printf("second wait\n");
+    while (1)
+    {
+        //printf("second wait\n");
+        while (!sysKeyboard.pop(&code))
+        {
+           // printf("second wait\n");
+        }
+        printf("second: %d\n", code);
+    }
+}
+
+void thirdThread(void *arg)
+{
+    byte code;
+   // printf("third wait\n");
+
+    while (1)
+    {
+        while (!sysKeyboard.pop(&code))
+        {
+           // printf("third wait\n");
+        }
+        printf("third: %d\n", code);
+    }
+}
 void firstThread(void *arg)
 {
     counter = 10;
@@ -106,8 +140,19 @@ void firstThread(void *arg)
 
     printFileSystem(0, rootDir);
     */
-   // sysProgramManager.executeProcess((void *)firstProcess, "", 1);
-    while(1) {
+    // sysProgramManager.executeProcess((void *)firstProcess, "", 1);
 
+    sysProgramManager.executeThread(secondThread, nullptr, "", 1);
+    sysProgramManager.executeThread(thirdThread, nullptr, "", 1);
+    while(1) {}
+    Semaphore mutex;
+    mutex.initialize(1);
+    mutex.P();
+    printf("acquire lock!\n");
+    mutex.P();
+    printf("acquire lock again\n");
+
+    while (1)
+    {
     }
 }

@@ -18,6 +18,7 @@ public:
     void run();
 private:
     void clear();
+    void printGraphSymbol();
 };
 
 #endif

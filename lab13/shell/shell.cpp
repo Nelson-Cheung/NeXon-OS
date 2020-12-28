@@ -17,6 +17,7 @@ void Shell::run()
     dword counter;
 
     clear();
+    printGraphSymbol();
     while (1)
     {
         const char *head = "root@nelson-cheung.cn # ";
@@ -103,4 +104,14 @@ void Shell::clear()
         putc(0);
     }
     moveCursor(0);
+}
+
+void Shell::printGraphSymbol() {
+    printf("\n");
+    printf("_   _      _                    ____ _                            \n");
+    printf("| \\ | | ___| |___  ___  _ __    / ___| |__   ___ _   _ _ __   __ _ \n");
+    printf("|  \\| |/ _ \\ / __|/ _ \\| '_ \\  | |   | '_ \\ / _ \\ | | | '_ \\ / _` |\n");
+    printf("| |\\  |  __/ \\__ \\ (_) | | | | | |___| | | |  __/ |_| | | | | (_| |\n");
+    printf("|_| \\_|\\___|_|___/\\___/|_| |_|  \\____|_| |_|\\___|\\__,_|_| |_|\\__, |\n");
+    printf("                                                             |___/ \n\n");
 }

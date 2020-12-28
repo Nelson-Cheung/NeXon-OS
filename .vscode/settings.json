@@ -2,6 +2,7 @@
     "files.associations": {
         "system_error": "cpp",
         "xlocale": "cpp",
-        "xutility": "cpp"
+        "xutility": "cpp",
+        "cstdio": "cpp"
     }
 }

@@ -18,6 +18,10 @@ void sysInitializeSysCall()
     syscallTable[SYSCALL_FORK] = (void *)sysFork;
     syscallTable[SYSCALL_EXIT] = (void *)sysExit;
     syscallTable[SYSCALL_WAIT] = (void *)sysWait;
+    syscallTable[SYSCALL_MOVE_CURSOR] = (void *)sysMoveCursor;
+    syscallTable[SYSCALL_PUT_CHAR] = (void *)sysPutc;
+    syscallTable[SYSCALL_GET_CHAR] = (void *)sysGetc;
+    syscallTable[SYSCALL_GET_CURSOR] = (void *)sysGetCursor;
 }
 
 void *syscall(dword function, dword ebx, dword ecx,
@@ -214,4 +218,32 @@ dword wait(dword *sstatus) {
 
 dword sysWait(dword *sstatus) {
     return sysProgramManager.wait(sstatus);
+}
+
+void moveCursor(dword pos) {
+    syscall(SYSCALL_MOVE_CURSOR, pos);
+}
+
+void sysMoveCursor(dword pos) {
+    MoveCursor(pos);
+}
+
+void putc(byte c) {
+    syscall(SYSCALL_PUT_CHAR, c);
+}
+
+void sysPutc(byte c) {
+    putchar(c);
+}
+
+byte getc() {
+    return (dword)syscall(SYSCALL_GET_CHAR);
+}
+
+dword getCursor() {
+    return (dword)syscall(SYSCALL_GET_CURSOR);
+}
+
+dword sysGetCursor() {
+    return GetCursor();
 }

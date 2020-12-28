@@ -5,6 +5,7 @@
 #include "../configure/type.h"
 #include "../cstdio.h"
 #include "../program/sync.h"
+#include "../syscall.h"
 
 #define KEYBOARD_BUFFER_SIZE 16
 
@@ -15,6 +16,8 @@ extern "C" void keyboardInterruptHandler();
 #define KEY_ESC 0x01
 #define KEY_LEFT_CTRL 0x1d
 #define KEY_LEFT_SHIFT 0x2a
+#define KEY_CAPS 0x3a
+#define KEY_SPACES 0x39
 
 class Keyboard
 {
@@ -32,6 +35,7 @@ public:
     void initialize();
     bool push(byte code);
     bool pop(byte *code);
+    byte scanCode2Char(byte c);
 };
 
 Keyboard sysKeyboard;

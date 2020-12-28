@@ -18,7 +18,6 @@ extern "C" void sysSetEsi(dword value);
 extern "C" void sysSetEdi(dword value);
 extern "C" void *sysStartSysCall();
 
-
 #define SYSCALL_AMOUNT 30
 void *syscallTable[SYSCALL_AMOUNT]; // 系统调用函数表
 
@@ -32,6 +31,10 @@ void *syscallTable[SYSCALL_AMOUNT]; // 系统调用函数表
 #define SYSCALL_FORK 7
 #define SYSCALL_EXIT 8
 #define SYSCALL_WAIT 9
+#define SYSCALL_MOVE_CURSOR 10
+#define SYSCALL_PUT_CHAR 11
+#define SYSCALL_GET_CHAR 12
+#define SYSCALL_GET_CURSOR 13
 
 // 初始化系统调用表
 void sysInitializeSysCall();
@@ -55,6 +58,10 @@ void sysKernelFree();              // 6号系统调用，内核内存释放
 dword sysFork();                   // 7号系统调用，fork
 extern void sysExit(dword status); // 8号系统调用，exit
 dword sysWait(dword *sstatus);     // 9号系统调用，wait
+void sysMoveCursor(dword pos);     // 10号系统调用
+byte sysGetc();                    // 11号系统调用
+void sysPutc(byte c);              // 12号系统调用
+dword sysGetCursor();              // 13号系统调用
 /***************************************************************/
 
 // 用户空间的系统调用
@@ -68,5 +75,9 @@ void kernelFree(void *address);
 dword fork();
 void exit(dword status);
 dword wait(dword *sstatus);
+void moveCursor(dword pos);
+byte getc();
+void putc(byte c);
+dword getCursor();
 /***************************************************************/
 #endif

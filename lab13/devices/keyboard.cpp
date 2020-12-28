@@ -3,7 +3,7 @@
 void keyboardInterruptHandler()
 {
     dword scanCode = _in_port(0x60);
-    printf("press code: 0x%x\n", scanCode);
+    //printf("press code: 0x%x\n", scanCode);
     sysKeyboard.push(scanCode);
 }
 
@@ -22,6 +22,9 @@ void Keyboard::initialize()
 
     mutex.initialize(1);
 
+    SHIFT_ON = false;
+    CAPS_ON = false;
+
     keymap[0x00][0] = 0, keymap[0x00][1] = 0;
     keymap[0x01][0] = 0, keymap[0x01][1] = 0; // escape
     keymap[0x02][0] = '1', keymap[0x02][1] = '!';
@@ -38,20 +41,20 @@ void Keyboard::initialize()
     keymap[0x0d][0] = '=', keymap[0x0d][1] = '+';
     keymap[0x0e][0] = '\b', keymap[0x0e][1] = '\b'; // backspace
 
-    keymap[0x0f][0] = '\t',  keymap[0x0f][1] = '\t'; // HT
-    keymap[0x10][0] = 'q',  keymap[0x10][1] = 'Q';
-    keymap[0x11][0] = 'w',  keymap[0x11][1] = 'W';
-    keymap[0x12][0] = 'e',  keymap[0x12][1] = 'E';
-    keymap[0x13][0] = 'r',  keymap[0x13][1] = 'R';
-    keymap[0x14][0] = 't',  keymap[0x14][1] = 'T';
-    keymap[0x15][0] = 'y',  keymap[0x15][1] = 'Y';
-    keymap[0x16][0] = 'u',  keymap[0x16][1] = 'U';
-    keymap[0x17][0] = 'i',  keymap[0x17][1] = 'I';
-    keymap[0x18][0] = 'o',  keymap[0x18][1] = 'O';
-    keymap[0x19][0] = 'p',  keymap[0x19][1] = 'P';
-    keymap[0x1a][0] = '[',  keymap[0x1a][1] = '{';
-    keymap[0x1b][0] = ']',  keymap[0x1b][1] = '}';
-    keymap[0x1c][0] = '\r',  keymap[0x1c][1] = '\r'; // CR
+    keymap[0x0f][0] = '\t', keymap[0x0f][1] = '\t'; // HT
+    keymap[0x10][0] = 'q', keymap[0x10][1] = 'Q';
+    keymap[0x11][0] = 'w', keymap[0x11][1] = 'W';
+    keymap[0x12][0] = 'e', keymap[0x12][1] = 'E';
+    keymap[0x13][0] = 'r', keymap[0x13][1] = 'R';
+    keymap[0x14][0] = 't', keymap[0x14][1] = 'T';
+    keymap[0x15][0] = 'y', keymap[0x15][1] = 'Y';
+    keymap[0x16][0] = 'u', keymap[0x16][1] = 'U';
+    keymap[0x17][0] = 'i', keymap[0x17][1] = 'I';
+    keymap[0x18][0] = 'o', keymap[0x18][1] = 'O';
+    keymap[0x19][0] = 'p', keymap[0x19][1] = 'P';
+    keymap[0x1a][0] = '[', keymap[0x1a][1] = '{';
+    keymap[0x1b][0] = ']', keymap[0x1b][1] = '}';
+    keymap[0x1c][0] = '\r', keymap[0x1c][1] = '\r'; // CR
 
     keymap[0x1d][0] = 0, keymap[0x1d][1] = 0; // L ctrl
     keymap[0x1e][0] = 'a', keymap[0x1e][1] = 'A';
@@ -80,17 +83,10 @@ void Keyboard::initialize()
     keymap[0x34][0] = '.', keymap[0x34][1] = '>';
     keymap[0x35][0] = '/', keymap[0x35][1] = '?';
     //keymap[0x36][0] = 0, keymap[0x36][1] = 0; // R shift
-
-
 }
 
 bool Keyboard::push(byte code)
 {
-    if ((code & 0x80) && (code != 0xe0) && (code != 0xe1))
-    {
-        return false;
-    }
-
     if ((end + 1) % KEYBOARD_BUFFER_SIZE == head)
     {
         printf("keyboard buffer full\n");
@@ -101,6 +97,7 @@ bool Keyboard::push(byte code)
     end = (end + 1) % KEYBOARD_BUFFER_SIZE;
     return true;
 }
+
 bool Keyboard::pop(byte *code)
 {
     mutex.P();
@@ -115,4 +112,39 @@ bool Keyboard::pop(byte *code)
 
     mutex.V();
     return true;
+}
+
+byte Keyboard::scanCode2Char(byte c)
+{
+    if (c & 0x80)
+    {
+        return 0;
+    }
+    else
+    {
+        if (c < KEY_MAP_NUM && keymap[c])
+        {
+            return keymap[c][0];
+        }
+        else
+        {
+            return 0;
+        }
+    }
+}
+
+byte sysGetc()
+{
+    byte c;
+    while (true)
+    {
+        while (!sysKeyboard.pop(&c))
+        {
+        }
+        c = sysKeyboard.scanCode2Char(c);
+        if (c)
+        {
+            return c;
+        }
+    }
 }

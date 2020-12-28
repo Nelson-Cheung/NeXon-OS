@@ -101,7 +101,7 @@ void secondThread(void *arg)
         //printf("second wait\n");
         while (!sysKeyboard.pop(&code))
         {
-           // printf("second wait\n");
+            // printf("second wait\n");
         }
         printf("second: %d\n", code);
     }
@@ -110,13 +110,13 @@ void secondThread(void *arg)
 void thirdThread(void *arg)
 {
     byte code;
-   // printf("third wait\n");
+    // printf("third wait\n");
 
     while (1)
     {
         while (!sysKeyboard.pop(&code))
         {
-           // printf("third wait\n");
+            // printf("third wait\n");
         }
         printf("third: %d\n", code);
     }
@@ -142,15 +142,7 @@ void firstThread(void *arg)
     */
     // sysProgramManager.executeProcess((void *)firstProcess, "", 1);
 
-    sysProgramManager.executeThread(secondThread, nullptr, "", 1);
-    sysProgramManager.executeThread(thirdThread, nullptr, "", 1);
-    while(1) {}
-    Semaphore mutex;
-    mutex.initialize(1);
-    mutex.P();
-    printf("acquire lock!\n");
-    mutex.P();
-    printf("acquire lock again\n");
+    sysProgramManager.executeProcess((void *)firstProcess, "", 1);
 
     while (1)
     {

@@ -6,6 +6,7 @@
 #include "program_configure.h"
 #include "threadlist.h"
 #include "addresspool.h"
+#include "../ext2/directory_entry.h"
 
 // 定义标识符ThreadFunction为函数指针void (*)(void *)类型
 typedef void (*ThreadFunction)(void *);
@@ -114,12 +115,14 @@ struct PCB
     ThreadListItem tagInGeneralList; // 线程队列标识
     ThreadListItem tagInAllList;     // 线程队列标识
 
-    dword *pageDir; // 页目录表地址，虚拟地址，位于内核空间
+    dword *pageDir;              // 页目录表地址，虚拟地址，位于内核空间
     AddressPool userVaddr;       // 进程用户地址池
     MemoryManager memoryManager; // 进程内存管理者
-    //dword fileDescriptors[MAX_FILE_OPEN_PER_PROCESS]; // 保存的是文件表中的下标
     dword parentPid;             // 父进程pid
     dword returnStatus;          // 返回状态保存
+
+    dword fileDescriptors[MAX_FILE_OPEN_PER_PROCESS]; // 保存的是文件表中的下标
+    DirectoryEntry currentDirectory;
 };
 
 MemoryManager sysMemoryManager;

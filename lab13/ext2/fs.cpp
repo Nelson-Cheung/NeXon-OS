@@ -657,22 +657,22 @@ Inode FileSystem::getRootInode()
 }
 
 // 14号系统调用，打开文件
-dword sysOpen(const char *path, dword mode, dword type) {
+dword sysFileOpen(const char *path, dword mode, dword type) {
     return sysFileSystem.openFile(path, mode, type);
 }
 
 // 15号系统调用，关闭文件
-void sysClose(dword handle) {
+void sysFileClose(dword handle) {
     sysFileSystem.closeFile(handle);
 }
 
 // 16号系统调用，读取文件
-void sysRead(dword handle, dword index, void *buffer) {
+void sysFileRead(dword handle, dword index, void *buffer) {
     sysFileSystem.readFileBlock(handle, index, buffer);
 }
 
 // 17号系统调用，写入文件
-void sysWrite(dword handle, dword index, void *buffer) {
+void sysFileWrite(dword handle, dword index, void *buffer) {
     sysFileSystem.writeFileBlock(handle, index, buffer);
 }
 

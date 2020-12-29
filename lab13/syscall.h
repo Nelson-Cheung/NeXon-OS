@@ -52,26 +52,25 @@ void *syscall(dword function, dword ebx = 0, dword ecx = 0,
 /***************************************************************/
 
 // 内核空间的系统调用函数, 从0号开始依次排列下去
-void sysFirstSysCall();                                  // 0号系统调用，首个系统调用
-void sysWrite();                                         // 1号系统调用，打印特定字符串
-void sysScheduleThread();                                // 2号系统调用，进程/线程切换
-void *sysMalloc();                                       // 3号系统调用，内存分配
-void sysFree();                                          // 4号系统调用，内存释放
-void *sysKernelMalloc();                                 // 5号系统调用，内核内存分配
-void sysKernelFree();                                    // 6号系统调用，内核内存释放
-dword sysFork();                                         // 7号系统调用，fork
-extern void sysExit(dword status);                       // 8号系统调用，exit
-dword sysWait(dword *sstatus);                           // 9号系统调用，wait
-void sysMoveCursor(dword pos);                           // 10号系统调用
-byte sysGetc();                                          // 11号系统调用
-void sysPutc(byte c);                                    // 12号系统调用
-dword sysGetCursor();                                    // 13号系统调用
-/*
-dword sysOpen(const char *path, dword mode, dword type); // 14号系统调用，打开文件
-void sysClose(dword handle);                             // 15号系统调用，关闭文件
-void sysRead(dword handle, dword index, void *buffer);   // 16号系统调用，读取文件
-void sysWrite(dword handle, dword index, void *buffer);  // 17号系统调用，写入文件
-*/
+void sysFirstSysCall();                                      // 0号系统调用，首个系统调用
+void sysWrite();                                             // 1号系统调用，打印特定字符串
+void sysScheduleThread();                                    // 2号系统调用，进程/线程切换
+void *sysMalloc();                                           // 3号系统调用，内存分配
+void sysFree();                                              // 4号系统调用，内存释放
+void *sysKernelMalloc();                                     // 5号系统调用，内核内存分配
+void sysKernelFree();                                        // 6号系统调用，内核内存释放
+dword sysFork();                                             // 7号系统调用，fork
+extern void sysExit(dword status);                           // 8号系统调用，exit
+dword sysWait(dword *sstatus);                               // 9号系统调用，wait
+void sysMoveCursor(dword pos);                               // 10号系统调用
+byte sysGetc();                                              // 11号系统调用
+void sysPutc(byte c);                                        // 12号系统调用
+dword sysGetCursor();                                        // 13号系统调用
+dword sysFileOpen(const char *path, dword mode, dword type); // 14号系统调用，打开文件
+void sysFileClose(dword handle);                             // 15号系统调用，关闭文件
+void sysFileRead(dword handle, dword index, void *buffer);   // 16号系统调用，读取文件
+void sysFileWrite(dword handle, dword index, void *buffer);  // 17号系统调用，写入文件
+
 /***************************************************************/
 
 // 用户空间的系统调用

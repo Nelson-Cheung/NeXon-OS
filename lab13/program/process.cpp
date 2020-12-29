@@ -119,6 +119,18 @@ dword ProgramManager::executeProcess(void *filename, const char *name, dword pri
 
     process->memoryManager.initialize();
 
+    // 实现和文件系统相关内容
+
+    // 进程打开文件表
+    for( int i = 0 ; i < MAX_FILE_OPEN_PER_PROCESS; ++i ) {
+        process->fileDescriptors[i] = -1;
+    }
+
+    // 当前目录为根目录
+    process->currentDirectory.inode = 0;
+    process->currentDirectory.setName("/");
+    process->currentDirectory.type = DIRECTORY_FILE;
+
     bool interruptStatus = _interrupt_status();
     _disable_interrupt();
     allPrograms.push_back(&(process->tagInAllList));

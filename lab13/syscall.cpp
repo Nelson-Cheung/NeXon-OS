@@ -22,6 +22,10 @@ void sysInitializeSysCall()
     syscallTable[SYSCALL_PUT_CHAR] = (void *)sysPutc;
     syscallTable[SYSCALL_GET_CHAR] = (void *)sysGetc;
     syscallTable[SYSCALL_GET_CURSOR] = (void *)sysGetCursor;
+    syscallTable[SYSCALL_FILE_OPEN] = (void *)sysFileOpen;
+    syscallTable[SYSCALL_FILE_CLOSE] = (void *)sysFileClose;
+    syscallTable[SYSCALL_FILE_WRITE] = (void *)sysFileWrite;
+    syscallTable[SYSCALL_FILE_READ] = (void *)sysFileRead;
 }
 
 void *syscall(dword function, dword ebx, dword ecx,
@@ -97,7 +101,7 @@ void sysScheduleThread()
 
 void userScheduleThread()
 {
-    
+
     PCB *pcb = sysProgramManager.running();
     //printf("user schedule thread: %x, %d\n", pcb, pcb->pageDir);
     if (pcb->pageDir)
@@ -199,51 +203,63 @@ void kernelFree(void *address)
     syscall(SYSCALL_KERNEL_FREE, (dword)address);
 }
 
-dword fork() {
+dword fork()
+{
 
     return (dword)syscall(SYSCALL_FORK);
 }
 
-dword sysFork() {
+dword sysFork()
+{
     return sysProgramManager.fork();
 }
 
-void exit(dword status) {
+void exit(dword status)
+{
     syscall(SYSCALL_EXIT, status);
 }
 
-dword wait(dword *sstatus) {
+dword wait(dword *sstatus)
+{
     return (dword)syscall(SYSCALL_WAIT, (dword)sstatus);
 }
 
-dword sysWait(dword *sstatus) {
+dword sysWait(dword *sstatus)
+{
     return sysProgramManager.wait(sstatus);
 }
 
-void moveCursor(dword pos) {
+void moveCursor(dword pos)
+{
     syscall(SYSCALL_MOVE_CURSOR, pos);
 }
 
-void sysMoveCursor(dword pos) {
+void sysMoveCursor(dword pos)
+{
     MoveCursor(pos);
 }
 
-void putc(byte c) {
+void putc(byte c)
+{
     syscall(SYSCALL_PUT_CHAR, c);
 }
 
-void sysPutc(byte c) {
+void sysPutc(byte c)
+{
     putchar(c);
 }
 
-byte getc() {
+byte getc()
+{
     return (dword)syscall(SYSCALL_GET_CHAR);
 }
 
-dword getCursor() {
+dword getCursor()
+{
     return (dword)syscall(SYSCALL_GET_CURSOR);
 }
 
-dword sysGetCursor() {
+dword sysGetCursor()
+{
     return GetCursor();
 }

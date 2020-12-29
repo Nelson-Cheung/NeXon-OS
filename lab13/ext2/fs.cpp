@@ -284,10 +284,9 @@ dword FileSystem::writeFileBlock(dword handle, dword block, void *buf)
     {
         openedFiles[handle].inode.size = block * SECTOR_SIZE + strlib::len((char *)buf);
         // 同步化到磁盘
-        
+
         Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
                          &(openedFiles[handle].inode), sizeof(Inode));
-                         
     }
     else if (strlib::len((char *)buf) != SECTOR_SIZE)
     {
@@ -308,7 +307,7 @@ dword FileSystem::appendFileBlock(dword handle)
         return false;
 
     // 一级索引块后需要分配数据块
-    if(openedFiles[handle].inode.blockAmount >= INODE_BLOCK_DIRECT &&
+    if (openedFiles[handle].inode.blockAmount >= INODE_BLOCK_DIRECT &&
         openedFiles[handle].inode.blockAmount - INODE_BLOCK_DIRECT < INODE_BLOCK_FIRST)
     {
         openedFiles[handle].inode.blocks[INODE_BLOCK_DIRECT + 0] = allocateDataBlock();
@@ -316,13 +315,11 @@ dword FileSystem::appendFileBlock(dword handle)
         {
             return false;
         }
-        
     }
 
     openedFiles[handle].inode.blockPushBack(block);
     Disk::writeBytes(sb.inodeTableStartSector * SECTOR_SIZE + sizeof(Inode) * openedFiles[handle].inode.id,
                      &(openedFiles[handle].inode), sizeof(Inode));
-                     
 }
 
 dword FileSystem::popFileBlock(dword handle)
@@ -657,6 +654,26 @@ Inode FileSystem::getRootInode()
     Inode root;
     Disk::readBytes(sb.inodeTableStartSector * SECTOR_SIZE, &root, sizeof(root));
     return root;
+}
+
+// 14号系统调用，打开文件
+dword sysOpen(const char *path, dword mode, dword type) {
+    return sysFileSystem.openFile(path, mode, type);
+}
+
+// 15号系统调用，关闭文件
+void sysClose(dword handle) {
+    sysFileSystem.closeFile(handle);
+}
+
+// 16号系统调用，读取文件
+void sysRead(dword handle, dword index, void *buffer) {
+    sysFileSystem.readFileBlock(handle, index, buffer);
+}
+
+// 17号系统调用，写入文件
+void sysWrite(dword handle, dword index, void *buffer) {
+    sysFileSystem.writeFileBlock(handle, index, buffer);
 }
 
 void printFileSystem(dword level, const DirectoryEntry &dir)

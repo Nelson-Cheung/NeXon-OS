@@ -24,6 +24,8 @@
 #include "disk/disk_bitmap.cpp"
 
 #include "devices/keyboard.cpp"
+#include "shell/executable.h"
+#include "shell/multiprocess.h"
 
 Semaphore mutex;
 
@@ -80,9 +82,13 @@ void firstProcess(void *arg)
 
     if (pid)
     {
-        while (1)
+        while (true)
         {
-            wait(nullptr);
+            pid = wait(nullptr);
+            /*
+            if(pid != -1)
+             printf("%d: child %d return\n", sysProgramManager.running()->pid, pid);
+             */
         }
     }
     else

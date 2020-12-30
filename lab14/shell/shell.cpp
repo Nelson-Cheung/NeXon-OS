@@ -3,6 +3,7 @@
 #include "../string.h"
 #include "../cstdlib.h"
 #include "../program/program_manager.h"
+#include "executable.h"
 
 Shell::Shell()
 {
@@ -50,7 +51,22 @@ void Shell::run()
         }
         else if (strlib::strcmp((char *)cmd, SHELL_EXEC) == 0)
         {
-            printf("you enter command \"%s\"\n", cmd);
+            extractNextParameter();
+            dword pid = fork();
+            if (pid)
+            {
+                while ((pid = wait(nullptr)) != -1)
+                {
+                    //printf("pid: %d\n", pid);
+                }
+                clear();
+            }
+            else
+            {
+                clear();
+                exec((char *)parameter);
+                exit(0);
+            }
         }
         else if (strlib::strcmp((char *)cmd, SHELL_RM) == 0)
         {
@@ -92,6 +108,8 @@ void Shell::run()
         {
             PCB *process = sysProgramManager.running();
             printf("%s\n", process->currentDirectory.getName());
+        } else if(strlib::strcmp((char *)cmd, SHELL_CLEAR) == 0) {
+            clear();
         }
         else
         {
@@ -453,7 +471,7 @@ void Shell::echo(const char *path, const char *content)
     DirectoryEntry entry = getDirectoryOfFile(path);
     if (entry.inode == -1)
     {
-        printf("\"%s\" does not exist\n",path);
+        printf("\"%s\" does not exist\n", path);
         return;
     }
     char filename[MAX_FILE_NAME + 1];
@@ -462,14 +480,14 @@ void Shell::echo(const char *path, const char *content)
     entry = sysFileSystem.getEntryInDirectory(entry, filename, REGULAR_FILE);
     if (entry.inode == -1)
     {
-        printf("\"%s\" does not exist\n",path);
+        printf("\"%s\" does not exist\n", path);
         return;
     }
 
     dword handle = sysFileSystem.openFile(entry, WRITE | READ, REGULAR_FILE);
     if (handle == -1)
     {
-        printf("can not open \"%s\"\n",path);
+        printf("can not open \"%s\"\n", path);
         return;
     }
 
@@ -483,7 +501,7 @@ void Shell::echo(const char *path, const char *content)
         (!sysFileSystem.appendFileBlock(handle)))
     {
 
-        printf("can not write \"%s\"\n",path);
+        printf("can not write \"%s\"\n", path);
         sysFileSystem.closeFile(handle);
         return;
     }
@@ -519,12 +537,11 @@ void Shell::echo(const char *path, const char *content)
             buffer[j] = content[i];
         }
         buffer[j] = '\0';
-        
 
         if ((index == inode.blockAmount) && (!sysFileSystem.appendFileBlock(handle)))
         {
 
-            printf("can not write \"%s\"\n",path);
+            printf("can not write \"%s\"\n", path);
             sysFileSystem.closeFile(handle);
             return;
         }
@@ -557,7 +574,7 @@ void Shell::cat(const char *path)
     dword handle = sysFileSystem.openFile(entry, READ, REGULAR_FILE);
     if (handle == -1)
     {
-        printf("can not open \"%s\"\n",path);
+        printf("can not open \"%s\"\n", path);
         return;
     }
 
@@ -579,4 +596,33 @@ void Shell::cat(const char *path)
     sysFileSystem.closeFile(handle);
 
     printf("\n");
+}
+
+void Shell::exec(const char *program)
+{
+    if (strlib::strcmp(program, SHELL_EXE_MULTIPROCESS) == 0)
+    {
+        executable::initialize();
+        sysProgramManager.executeThread(executable::multiprocess_1, nullptr, "", 1);
+        sysProgramManager.executeThread(executable::multiprocess_2, nullptr, "", 1);
+        executable::delay();
+        executable::delay();
+        executable::delay();
+        executable::delay();
+
+        while (true)
+        {
+            executable::delay();
+            executable::mutex.P();
+            if (executable::threadCounter == 0)
+            {
+                break;
+            }
+            executable::mutex.V();
+        }
+    }
+    else
+    {
+        printf("\"%s\" is not found\n", program);
+    }
 }

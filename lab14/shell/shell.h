@@ -19,6 +19,7 @@
 #define SHELL_ECHO "echo"
 #define SHELL_TOUCH "touch"
 #define SHELL_PWD "pwd"
+#define SHELL_CLEAR "clear"
 
 #define SHELL_RM_FILE "-f"
 #define SHELL_RM_DIR "-d"
@@ -65,6 +66,8 @@ private:
     void echo(const char *path, const char *buf);
     // cat
     void cat(const char *path);
+    // exec
+    void exec(const char *program);
 };
 
 #endif

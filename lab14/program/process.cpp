@@ -175,7 +175,7 @@ dword ProgramManager::fork()
     if (!child)
         return -1;
 
-    printf("parent: 0x%x, child: 0x%x\n", parent, child);
+    //printf("parent: 0x%x, child: 0x%x\n", parent, child);
 
     if(copyProcess(parent, child)) {
         bool interruptStatus = _interrupt_status();

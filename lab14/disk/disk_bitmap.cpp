@@ -1,5 +1,5 @@
 #include "disk_bitmap.h"
-#include "../math.h"
+#include "../clib/math.h"
 
 DiskBitMap::DiskBitMap()
 {

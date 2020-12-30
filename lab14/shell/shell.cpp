@@ -1,7 +1,7 @@
 #include "shell.h"
-#include "../cstdio.h"
-#include "../string.h"
-#include "../cstdlib.h"
+#include "../clib/string.h"
+#include "../clib/cstdlib.h"
+#include "../clib/cstdio.h"
 #include "../program/program_manager.h"
 #include "executable.h"
 

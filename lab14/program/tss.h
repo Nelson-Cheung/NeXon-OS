@@ -1,10 +1,10 @@
 #ifndef TSS_H
 #define TSS_H
 
-#include "../type.h"
 #include "thread.h"
+#include "../kernel/type.h"
 #include "../memory/memory.h"
-#include "../cstdlib.h"
+#include "../clib/cstdlib.h"
 
 // 3特权级下的数据段和代码段
 #define USER_CODE_LOW 0x0000ffff

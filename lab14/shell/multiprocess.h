@@ -1,8 +1,8 @@
 #ifndef MULTIPROCESS_H
 #define MULTIPROCESS_H
 
-#include "../type.h"
-#include "../syscall.h"
+#include "../kernel/type.h"
+#include "../kernel/syscall.h"
 
 namespace Multiprocess
 {

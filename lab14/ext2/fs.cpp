@@ -1,11 +1,12 @@
 #include "fs.h"
 #include "directory_entry.h"
 
-#include "../cstdlib.h"
-#include "../syscall.h"
-#include "../cstdio.h"
-#include "../string.h"
-#include "../math.h"
+
+#include "../kernel/syscall.h"
+#include "../clib/cstdio.h"
+#include "../clib/cstdlib.h"
+#include "../clib/string.h"
+#include "../clib/math.h"
 
 FileSystem::FileSystem()
 {

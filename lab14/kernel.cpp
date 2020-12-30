@@ -1,10 +1,11 @@
-#include "oslib.h"
-#include "keyboard.h"
-#include "string.h"
-#include "utils.h"
-#include "interrupt.h"
-#include "cstdio.h"
-#include "bitmap.cpp"
+#include "kernel/oslib.h"
+#include "clib/string.h"
+#include "clib/utils.h"
+#include "kernel/interrupt.h"
+#include "clib/cstdio.h"
+#include "shell/executable.h"
+#include "shell/multiprocess.h"
+#include "program/lock.h"
 
 #include "memory/memory.cpp"
 #include "program/memory_manager.cpp"
@@ -14,27 +15,17 @@
 #include "program/threadlist.cpp"
 #include "program/addresspool.cpp"
 #include "program/sync.cpp"
-#include "program/lock.h"
-
-#include "syscall.cpp"
-
+#include "kernel/syscall.cpp"
 #include "shell/shell.cpp"
-
 #include "ext2/fs.cpp"
 #include "disk/disk_bitmap.cpp"
-
 #include "devices/keyboard.cpp"
-#include "shell/executable.h"
-#include "shell/multiprocess.h"
-
-Semaphore mutex;
 
 void init();
 void firstThread(void *arg);
 
 extern "C" void Kernel();
 
-// 从shell返回一定会出错
 void Kernel()
 {
     // 初始化
@@ -74,8 +65,6 @@ void init()
     sysKeyboard.initialize();
 }
 
-dword counter;
-
 void firstProcess(void *arg)
 {
     dword pid = fork();
@@ -85,10 +74,6 @@ void firstProcess(void *arg)
         while (true)
         {
             pid = wait(nullptr);
-            /*
-            if(pid != -1)
-             printf("%d: child %d return\n", sysProgramManager.running()->pid, pid);
-             */
         }
     }
     else
@@ -98,58 +83,10 @@ void firstProcess(void *arg)
     }
 }
 
-void secondThread(void *arg)
-{
-    byte code;
-    printf("second wait\n");
-    while (1)
-    {
-        //printf("second wait\n");
-        while (!sysKeyboard.pop(&code))
-        {
-            // printf("second wait\n");
-        }
-        printf("second: %d\n", code);
-    }
-}
-
-void thirdThread(void *arg)
-{
-    byte code;
-    // printf("third wait\n");
-
-    while (1)
-    {
-        while (!sysKeyboard.pop(&code))
-        {
-            // printf("third wait\n");
-        }
-        printf("third: %d\n", code);
-    }
-}
 void firstThread(void *arg)
 {
-    counter = 10;
-
-    mutex.initialize(1);
     _enable_interrupt();
-
-    /*
-    bool ans;
-    DirectoryEntry rootDir, current;
-    rootDir.inode = 0;
-    rootDir.type = DIRECTORY_FILE;
-    rootDir.setName("/");
-
-    byte buf[SECTOR_SIZE + 1];
-    memset(buf, 0, SECTOR_SIZE + 1);
-
-    printFileSystem(0, rootDir);
-    */
-    // sysProgramManager.executeProcess((void *)firstProcess, "", 1);
-
     sysProgramManager.executeProcess((void *)firstProcess, "", 1);
-
     while (1)
     {
     }

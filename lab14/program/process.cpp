@@ -1,7 +1,7 @@
 #include "program_manager.h"
-#include "../cstdlib.h"
-#include "../interrupt.h"
-#include "../math.h"
+#include "../clib/cstdlib.h"
+#include "../kernel/interrupt.h"
+#include "../clib/math.h"
 #include "tss.h"
 
 // 用户进程初始化，构建用户进程上下文环境

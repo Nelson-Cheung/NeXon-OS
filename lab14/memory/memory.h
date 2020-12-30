@@ -1,8 +1,8 @@
 #ifndef MEMORY_H
 #define MEMORY_H
 
-#include "../type.h"
-#include "../bitmap.h"
+#include "../kernel/type.h"
+#include "../datastructure/bitmap.h"
 
 #include "../program/addresspool.h"
 #include "../program/program_manager.h"

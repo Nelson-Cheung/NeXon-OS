@@ -1,6 +1,6 @@
 #include "program_manager.h"
-#include "../interrupt.h"
-#include "../cstdlib.h"
+#include "../kernel/interrupt.h"
+#include "../clib/cstdlib.h"
 #include "tss.h"
 
 // 线程调度

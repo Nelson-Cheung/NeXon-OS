@@ -1,7 +1,7 @@
 #include "sync.h"
 #include "program_manager.h"
-#include "../interrupt.h"
-#include "../cstdio.h"
+#include "../kernel/interrupt.h"
+#include "../clib/cstdio.h"
 
 Semaphore::Semaphore()
 {

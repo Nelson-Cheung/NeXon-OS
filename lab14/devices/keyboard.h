@@ -1,11 +1,11 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 
-#include "../oslib.h"
+#include "../kernel/oslib.h"
 #include "../configure/type.h"
-#include "../cstdio.h"
+#include "../clib/cstdio.h"
 #include "../program/sync.h"
-#include "../syscall.h"
+#include "../kernel/syscall.h"
 
 #define KEYBOARD_BUFFER_SIZE 16
 

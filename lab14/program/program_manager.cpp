@@ -1,9 +1,9 @@
 #include "program_manager.h"
-#include "../cstdlib.h"
-#include "../syscall.h"
-#include "../math.h"
-#include "../interrupt.h"
-#include "../panic.h"
+#include "../clib/cstdlib.h"
+#include "../kernel/syscall.h"
+#include "../clib/math.h"
+#include "../kernel/interrupt.h"
+#include "../kernel/panic.h"
 #include "program_configure.h"
 
 // 初始化

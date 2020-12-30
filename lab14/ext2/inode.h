@@ -1,10 +1,10 @@
 #ifndef INODE_H
 #define INODE_H
 
-#include "../type.h"
+#include "../kernel/type.h"
 #include "../disk/disk.h"
 #include "../configure/os_configure.h"
-#include "../panic.h"
+#include "../kernel/panic.h"
 
 #define INODE_BLOCK_DIRECT 8                            // 直接数据块数目，此后，一级，二级等多级根区块均为1个
 #define INODE_BLOCK_FIRST (SECTOR_SIZE / sizeof(dword)) // 一级数据块的数目

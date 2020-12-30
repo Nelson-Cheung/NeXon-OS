@@ -1,7 +1,7 @@
 #ifndef LOCK_H
 #define LOCK_H
 
-#include "../interrupt.h"
+#include "../kernel/interrupt.h"
 
 class Lock{
 private:

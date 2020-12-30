@@ -1,10 +1,10 @@
 #ifndef DISK_H
 #define DISK_H
 
-#include "../type.h"
+#include "../kernel/type.h"
 #include "../configure/os_configure.h"
-#include "../oslib.h"
-#include "../cstdio.h"
+#include "../kernel/oslib.h"
+#include "../clib/cstdio.h"
 
 // 实现硬盘按块存取，按字节存取
 

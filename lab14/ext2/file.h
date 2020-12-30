@@ -1,7 +1,7 @@
 #ifndef FILE_H
 #define FILE_H
 
-#include "../type.h"
+#include "../kernel/type.h"
 #include "../configure/os_configure.h"
 #include "fs_constant.h"
 

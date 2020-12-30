@@ -2,7 +2,7 @@
 #define SYNC_H
 
 #include "threadlist.h"
-#include "../type.h"
+#include "../kernel/type.h"
 
 class Semaphore
 {

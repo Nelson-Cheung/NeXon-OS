@@ -1,7 +1,7 @@
 #ifndef SUPER_BLOCK_H
 #define SUPER_BLOCK_H
 
-#include "../type.h"
+#include "../kernel/type.h"
 #include "../configure/os_configure.h"
 
 // 超级块保存的是文件系统的配置信息

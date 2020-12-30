@@ -1,7 +1,7 @@
 #ifndef ADDRESS_POOL_H
 #define ADDRESS_POOL_H
 
-#include "../bitmap.h"
+#include "../datastructure/bitmap.h"
 #include "../configure/os_configure.h"
 
 enum AddressPoolType

@@ -1,8 +1,8 @@
 #ifndef EXECUTABLE_H
 #define EXECUTABLE_H
 
-#include "../type.h"
-#include "../syscall.h"
+#include "../kernel/type.h"
+#include "../kernel/syscall.h"
 
 #define SHELL_EXE_MULTIPROCESS "multiprocess"
 

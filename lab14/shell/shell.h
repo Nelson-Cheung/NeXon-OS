@@ -4,9 +4,9 @@
 #define SHELL_BUFFER_SIZE 64
 #define SHELL_COMMAND_SIZE 8
 
-#include "../type.h"
+#include "../kernel/type.h"
 #include "../devices/keyboard.h"
-#include "../ext2/fs.h"
+#include "../ext2/fs.h" 
 
 #define SHELL_LS "ls"
 #define SHELL_TREE "tree"

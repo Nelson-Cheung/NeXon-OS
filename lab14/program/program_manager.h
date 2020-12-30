@@ -4,7 +4,7 @@
 #include "thread.h"
 #include "../memory/memory.h"
 #include "threadlist.h"
-#include "../cstdio.h"
+#include "../clib/cstdio.h"
 
 extern "C" void copyProcess(PCB *parent, PCB *child, dword entry, dword esp, dword esi, dword edi, dword ebx, dword ebp);
 

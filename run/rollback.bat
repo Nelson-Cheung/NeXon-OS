@@ -1,4 +1,4 @@
 del hd.img
-copy hd-second.img hd.img
+copy hd.img.backup hd.img
 pause
 exit

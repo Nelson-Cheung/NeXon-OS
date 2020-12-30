@@ -1,6 +1,8 @@
 #include "shell.h"
 #include "../cstdio.h"
+#include "../string.h"
 #include "../cstdlib.h"
+#include "../program/program_manager.h"
 
 Shell::Shell()
 {
@@ -15,7 +17,7 @@ void Shell::run()
 {
     const char *user = "root@nelson-cheung.cn # ";
 
-    //clear();
+    clear();
     printGraphSymbol();
     while (true)
     {
@@ -71,11 +73,16 @@ void Shell::run()
         }
         else if (strlib::strcmp((char *)cmd, SHELL_CAT) == 0)
         {
-            printf("you enter command \"%s\"\n", cmd);
+            extractNextParameter();
+            cat((char *)parameter);
         }
         else if (strlib::strcmp((char *)cmd, SHELL_ECHO) == 0)
         {
-            printf("you enter command \"%s\"\n", cmd);
+            extractNextParameter();
+            char path[SHELL_BUFFER_SIZE + 1];
+            strlib::strcpy((char *)parameter, path, 0, strlib::len((char *)parameter));
+            extractNextParameter();
+            echo(path, (char *)parameter);
         }
         else if (strlib::strcmp((char *)cmd, SHELL_TOUCH) == 0)
         {
@@ -412,6 +419,11 @@ void Shell::cd(const char *path)
     else if (strlib::strcmp(path, "..") == 0)
     {
     }
+    else if (strlib::strcmp(path, "/") == 0)
+    {
+        process->currentDirectory.inode = 0;
+        process->currentDirectory.setName("/");
+    }
     else
     {
         DirectoryEntry entry = getDirectoryOfFile(path);
@@ -434,4 +446,137 @@ void Shell::cd(const char *path)
             printf("\"%s\" does not exist\n", parameter);
         }
     }
+}
+
+void Shell::echo(const char *path, const char *content)
+{
+    DirectoryEntry entry = getDirectoryOfFile(path);
+    if (entry.inode == -1)
+    {
+        printf("\"%s\" does not exist\n",path);
+        return;
+    }
+    char filename[MAX_FILE_NAME + 1];
+    getFileNameInPath(path, filename);
+    // 只有普通文件才能输出
+    entry = sysFileSystem.getEntryInDirectory(entry, filename, REGULAR_FILE);
+    if (entry.inode == -1)
+    {
+        printf("\"%s\" does not exist\n",path);
+        return;
+    }
+
+    dword handle = sysFileSystem.openFile(entry, WRITE | READ, REGULAR_FILE);
+    if (handle == -1)
+    {
+        printf("can not open \"%s\"\n",path);
+        return;
+    }
+
+    Inode inode = sysFileSystem.getInode(entry.inode);
+    dword i, index, length;
+    char buffer[BLOCK_SIZE + 1];
+
+    // 以下代码会出现不一致的情况
+
+    if ((inode.blockAmount == 0) &&
+        (!sysFileSystem.appendFileBlock(handle)))
+    {
+
+        printf("can not write \"%s\"\n",path);
+        sysFileSystem.closeFile(handle);
+        return;
+    }
+
+    inode = sysFileSystem.getInode(entry.inode);
+    length = inode.size;
+    index = length / BLOCK_SIZE;
+    //printf("last block: %d\n", inode.blocks[index]);
+    i = 0;
+
+    //printf("%d\n", length);
+
+    if (length && (length % BLOCK_SIZE))
+    {
+        sysFileSystem.readFileBlock(handle, index, buffer);
+        length = length % BLOCK_SIZE;
+        dword left = BLOCK_SIZE - length;
+
+        for (; i < left && content[i]; ++i)
+        {
+            buffer[i + length] = content[i];
+        }
+        buffer[i + length] = '\0';
+        sysFileSystem.writeFileBlock(handle, index, buffer);
+        ++index;
+    }
+
+    while (content[i])
+    {
+        dword j;
+        for (j = 0; j < BLOCK_SIZE && content[i]; ++j, ++i)
+        {
+            buffer[j] = content[i];
+        }
+        buffer[j] = '\0';
+        
+
+        if ((index == inode.blockAmount) && (!sysFileSystem.appendFileBlock(handle)))
+        {
+
+            printf("can not write \"%s\"\n",path);
+            sysFileSystem.closeFile(handle);
+            return;
+        }
+
+        sysFileSystem.writeFileBlock(handle, index, buffer);
+        ++index;
+    }
+
+    sysFileSystem.closeFile(handle);
+}
+
+void Shell::cat(const char *path)
+{
+    DirectoryEntry entry = getDirectoryOfFile(path);
+    if (entry.inode == -1)
+    {
+        printf("\"%s\" does not exist\n", path);
+        return;
+    }
+    char filename[MAX_FILE_NAME + 1];
+    getFileNameInPath(path, filename);
+    // 只有普通文件才能输出
+    entry = sysFileSystem.getEntryInDirectory(entry, filename, REGULAR_FILE);
+    if (entry.inode == -1)
+    {
+        printf("\"%s\" does not exist\n", path);
+        return;
+    }
+
+    dword handle = sysFileSystem.openFile(entry, READ, REGULAR_FILE);
+    if (handle == -1)
+    {
+        printf("can not open \"%s\"\n",path);
+        return;
+    }
+
+    Inode inode = sysFileSystem.getInode(entry.inode);
+
+    char buf[BLOCK_SIZE + 1];
+
+    for (dword i = 0; i < inode.blockAmount; ++i)
+    {
+        sysFileSystem.readFileBlock(handle, i, buf);
+        buf[BLOCK_SIZE] = '\0';
+        printf("%s", buf);
+        if (strlib::len(buf) < BLOCK_SIZE)
+        {
+            break;
+        }
+    }
+
+    sysFileSystem.closeFile(handle);
+
+    printf("\n");
 }

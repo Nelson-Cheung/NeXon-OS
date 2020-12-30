@@ -22,6 +22,8 @@ struct Inode
     Inode()
     {
         id = -1;
+        size = 0;
+        blockAmount = 0;
         for (int i = 0; i < FILE_INDEX_BLOCKS; ++i)
         {
             blocks[i] = -1;
@@ -200,6 +202,7 @@ struct Inode
     // buf的大小一定是SECTOR_SIZE
     void writeBlock(dword index, void *buf)
     {
+        //printf("%d write block %s\n", index, buf);
         if (index < INODE_BLOCK_DIRECT)
         {
             // 处理直接数据块

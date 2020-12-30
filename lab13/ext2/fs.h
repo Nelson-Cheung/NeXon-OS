@@ -42,7 +42,8 @@ public:
 
     // 按路径path打开文件，创建一个OpenedFile对象放入openedFiles中，并将其下标作为文件句柄返回。未找到或打开文件表已满则返回-1
     dword openFile(const char *path, dword mode, dword type); // pass
-
+    dword openFile(DirectoryEntry entry, dword mode, dword type); // pass
+    
     // 关闭文件
     dword closeFile(dword handle); // pass
 

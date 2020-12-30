@@ -230,6 +230,98 @@ dword FileSystem::openFile(const char *path, dword mode, dword type)
     return -1;
 }
 
+dword FileSystem::openFile(DirectoryEntry entry, dword mode, dword type) {
+    // 目录文件禁止外界写
+    if ((!mode) || ((mode & WRITE) && type == DIRECTORY_FILE) || (entry.inode == -1))
+        return -1;
+
+    // 查找是否有对应的文件
+    Inode inode = getInode(entry.inode);
+
+    // 未找到对应的文件
+    if (inode.id == -1)
+        return -1;
+
+    dword index;
+    // 检查是否已在打开文件表中
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        if (openedFiles[index].inode.id == inode.id &&
+            openedFiles[index].type == type)
+            break;
+    }
+
+    // 存在于打开文件表中
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        // 以非写方式打开
+        if (mode & WRITE)
+        {
+            // 以写方式打开，只能有一个写者
+            if (!openedFiles[index].count)
+            {
+                ++openedFiles[index].count;
+                openedFiles[index].mode = mode;
+                return index;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+        else
+        {
+            // 已打开文件是以读方式打开的
+            if (!(openedFiles[index].count && (openedFiles[index].mode & WRITE)))
+            {
+                ++openedFiles[index].count;
+                openedFiles[index].mode = mode;
+                return index;
+            }
+            else
+            {
+                return -1;
+            }
+        }
+    }
+
+    // 找空位
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        if (openedFiles[index].inode.id == -1)
+            break;
+    }
+
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        openedFiles[index].inode = inode;
+        openedFiles[index].count = 1;
+        openedFiles[index].mode = mode;
+        openedFiles[index].type = type;
+        return index;
+    }
+
+    // 替换其中一个打开文件，FIFO法则
+    for (index = 0; index < MAX_SYSTEM_OPENED_FILES; ++index)
+    {
+        // 没有进程打开此文件
+        if (openedFiles[index].count == 0)
+            break;
+    }
+
+    if (index < MAX_SYSTEM_OPENED_FILES)
+    {
+        openedFiles[index].inode = inode;
+        openedFiles[index].count = 1;
+        openedFiles[index].mode = mode;
+        openedFiles[index].type = type;
+        return index;
+    }
+
+    // 打开文件表已满
+    return -1;
+}
+
 dword FileSystem::closeFile(dword handle)
 {
     if (handle >= 0 && handle < MAX_SYSTEM_OPENED_FILES)

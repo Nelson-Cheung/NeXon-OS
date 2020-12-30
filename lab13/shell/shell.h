@@ -61,6 +61,10 @@ private:
     void ls();
     // cd
     void cd(const char *path);
+    // echo
+    void echo(const char *path, const char *buf);
+    // cat
+    void cat(const char *path);
 };
 
 #endif

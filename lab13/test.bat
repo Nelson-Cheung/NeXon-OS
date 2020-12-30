@@ -12,7 +12,7 @@ echo 链接内核
 %COMPLIE_TOOL_DIR%\ld.exe -melf_i386 -N kernel_asm.o kernel.o -Ttext 0xc0020000  --oformat binary -o kernel.bin
 
 echo 写入内核
-%COMPLIE_TOOL_DIR%\dd.exe if=kernel.bin of=%RUN_DIR%\hd.img bs=512 count=95 seek=6 conv=notrunc
+%COMPLIE_TOOL_DIR%\dd.exe if=kernel.bin of=%RUN_DIR%\hd.img bs=512 count=145 seek=6 conv=notrunc
 pause
 
 cls

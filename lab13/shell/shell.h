@@ -20,6 +20,8 @@
 #define SHELL_TOUCH "touch"
 #define SHELL_PWD "pwd"
 
+#define SHELL_RM_FILE "-f"
+#define SHELL_RM_DIR "-d"
 class Shell
 {
 private:
@@ -54,7 +56,7 @@ private:
     // 创建文件
     void createFile(const char *path, dword type);
     // rm
-    void rm(const char *path);
+    void rm(const char *path, dword type);
     // ls
     void ls();
     // cd

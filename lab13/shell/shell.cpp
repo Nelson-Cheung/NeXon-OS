@@ -15,7 +15,7 @@ void Shell::run()
 {
     const char *user = "root@nelson-cheung.cn # ";
 
-    clear();
+    //clear();
     printGraphSymbol();
     while (true)
     {
@@ -52,7 +52,22 @@ void Shell::run()
         }
         else if (strlib::strcmp((char *)cmd, SHELL_RM) == 0)
         {
-            rm((char *)parameter);
+            extractNextParameter();
+            if (strlib::strcmp((char *)parameter, SHELL_RM_FILE) == 0)
+            {
+                extractNextParameter();
+                rm((char *)parameter, REGULAR_FILE);
+            }
+            else if (strlib::strcmp((char *)parameter, SHELL_RM_DIR) == 0)
+            {
+                extractNextParameter();
+                rm((char *)parameter, DIRECTORY_FILE);
+            }
+            else
+            {
+                extractNextParameter();
+                printf("\"%s\" can not be deleted\n", parameter);
+            }
         }
         else if (strlib::strcmp((char *)cmd, SHELL_CAT) == 0)
         {
@@ -286,17 +301,23 @@ DirectoryEntry Shell::getDirectoryOfFile(const char *path)
 
     DirectoryEntry current;
 
+    if (last == -1)
+    {
+        return sysProgramManager.running()->currentDirectory;
+    }
+
     if (first == 0)
     {
         current.inode = 0;
         current.type = DIRECTORY_FILE;
-    } else if(last == -1) {
-        return sysProgramManager.running()->currentDirectory;
     }
     else
     {
         current = sysProgramManager.running()->currentDirectory;
+        first = 0;
     }
+
+    // printf("%d %d\n", first, current.inode);
 
     // 允许多个'/'整合成为一个'/'
     while (first < last && path[first] == '/')
@@ -326,6 +347,7 @@ DirectoryEntry Shell::getDirectoryOfFile(const char *path)
             ++first;
     }
 
+    //printf("%d\n", current.inode);
     return current;
 }
 
@@ -344,7 +366,7 @@ void Shell::createFile(const char *path, dword type)
 {
     extractNextParameter();
     DirectoryEntry entry = getDirectoryOfFile((char *)parameter);
-    printf("%d %s\n", entry.inode, entry.getName());
+    //printf("%d %s\n", entry.inode, entry.getName());
     if (entry.inode != -1)
     {
         char filename[MAX_FILE_NAME + 1];
@@ -361,16 +383,15 @@ void Shell::createFile(const char *path, dword type)
     }
 }
 
-void Shell::rm(const char *path)
+void Shell::rm(const char *path, dword type)
 {
-    extractNextParameter();
-    DirectoryEntry entry = getDirectoryOfFile((char *)parameter);
+    DirectoryEntry entry = getDirectoryOfFile(path);
     if (entry.inode != -1)
     {
         char filename[MAX_FILE_NAME + 1];
-        getFileNameInPath((char *)parameter, filename);
-        dword ans = sysFileSystem.deleteEntryInDirectory(entry, filename, DIRECTORY_FILE);
-        if (ans == -1)
+        getFileNameInPath(path, filename);
+        dword ans = sysFileSystem.deleteEntryInDirectory(entry, filename, type);
+        if (ans == false)
         {
             printf("\"%s\" can not be deleted\n", parameter);
         }
